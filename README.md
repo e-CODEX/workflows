@@ -2,9 +2,28 @@
 
 This repository contains reusable workflows for the e-Codex project.
 
-## SonarQube Java Analysis
+## SonarCloud Java Analysis
 
 This workflow runs a SonarCloud analysis on a Java project. It requires the following inputs:
+
+### Usage
+
+```yaml
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  sonar:
+    uses: eu-LISA/ecodex-workflows/.github/workflows/sonar-java.yaml
+    with:
+        jacoco-xml-report-path: 'target/site/jacoco/jacoco.xml'
+        java-version: '17'
+        build-tool: 'maven'
+    secrets: inherit
+```
 
 | Name                     | Description                                                     | Required | Default |
 | ------------------------ | --------------------------------------------------------------- | -------- | ------- |
