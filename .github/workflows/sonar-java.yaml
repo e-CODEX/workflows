@@ -1,0 +1,68 @@
+on:
+  workflow_call:
+    inputs:
+      jacoco-xml-report-path:
+        required: true
+        type: string
+        description: "Path to the coverage report geneearated by JaCoCo"
+      java-version:
+        required: true
+        type: number
+        description: "Java version to use for the analysis. Must be 17 or higher" 
+        default: 21
+      build-tool:
+        required: true
+        type: string
+        description: "Build tool to use for the analysis. Must be 'maven' or 'gradle'"
+        default: 'maven'  
+    secrets:
+      SONAR_TOKEN:
+        required: true
+
+jobs:
+  sonar:
+    permissions:
+        security-events: write # required for uploading SARIF files
+        pull-requests: write # required for updating PR comments
+    name: Analyze with SonarCloud
+    runs-on: ubuntu-latest      
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ inputs.java-version }}
+          cache: ${{ inputs.build-tool }}
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+            path: ~/.sonar/cache
+            key: ${{ runner.os }}-sonar
+            restore-keys: ${{ runner.os }}-sonar
+
+      - name: Run SonarCloud analysis (Maven)
+        if: ${{ inputs.build-tool == 'maven' }}
+        run: |
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+          -Dsonar.organization=eulisa \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.java.binaries=target/classes \
+          -Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.jacoco-xml-report-path }}
+       
+      - name: Run SonarCloud analysis (Gradle)
+        if: ${{ inputs.build-tool == 'gradle' }}
+        run: |
+          ./gradlew sonarqube \
+          -Dsonar.organization=eulisa \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.java.binaries=build/classes/java/main \
+          -Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.jacoco-xml-report-path }} \
+          -Dsonar.token=${{ secrets.SONAR_TOKEN }}    
