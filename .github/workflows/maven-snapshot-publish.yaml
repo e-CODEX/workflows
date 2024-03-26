@@ -1,0 +1,50 @@
+name: "Publish Snapshot to Maven Repository"
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: "Java version to use for the build."
+        required: true
+        default: 17
+        type: number
+      maven-parameters:
+        description: "Extra parameters to pass to Maven"
+        required: false
+        type: string  
+        default: ""
+      maven-repo-id:
+        description: "Maven repository ID"
+        required: true
+        type: string
+    secrets: 
+      MAVEN_NAME:
+        description: "Maven repository username"
+        required: true
+      MAVEN_SECRET:
+        description: "Maven repository password"  
+        required: true
+jobs:
+  publish-snapshot:
+    name: Publish Snapshot to Maven Repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ inputs.java-version }}
+
+      - uses: s4u/maven-settings-action@2300ba896e2a0be8220124cb57bba875435d108b # v3.0.0
+        with:
+          servers: |
+            [{
+              "id": "${{ inputs.maven-repo-id }}",
+              "username": "${{ secrets.MAVEN_NAME }}",
+              "password": "${{ secrets.MAVEN_SECRET }}"
+            }]
+
+      - name: Publish Snapshot
+        run: mvn -B -e deploy -DrepositoryId=${{ inputs.maven-repo-id }} ${{ inputs.maven-parameters }}

@@ -3,7 +3,7 @@ on:
   workflow_call:
     inputs:
       java-version:
-        description: "Java version"
+        description: "Java version to use for the build. (Tests are run on LTS versions)"
         required: true
         default: 17
         type: number
@@ -22,12 +22,14 @@ on:
         type: string
 jobs:        
   test:
+    name: Test on ${{ matrix.os }} and JDK ${{ matrix.java-version }}
     permissions:
       contents: write 
       pull-requests: write # required for updating PR comments
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest,macos-14]
+        os: [windows-latest, macos-14, macos-13, ubuntu-latest] # Macos 13 is x86-64 and 14 is aarch64
+        java-version: [17, 21]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -37,7 +39,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: ${{ inputs.java-version }}
+          java-version: ${{ matrix.java-version }}
           cache: maven
 
       - name: Build with Maven
@@ -45,6 +47,7 @@ jobs:
           mvn -B -e verify ${{ inputs.maven-parameters }}
 
   build:
+    name: Build artifact and SBOM using Java ${{ inputs.java-version }}
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -60,7 +63,7 @@ jobs:
 
       - name: Build with Maven
         run: |
-          mvn -B -e clean package
+          mvn -B -e clean package ${{ inputs.maven-parameters }}
 
       - name: SBOM submission action
         uses: evryfs/sbom-dependency-submission-action@v0.0.14
@@ -78,3 +81,4 @@ jobs:
         with:
           name: artifact-snaphot
           path: ${{ inputs.artifact-path }}
+       
