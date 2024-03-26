@@ -36,3 +36,20 @@ It also requires the following secret:
 | Name          | Description      | Required |
 | ------------- | ---------------- | -------- |
 | `SONAR_TOKEN` | SonarCloud token | Yes      |
+
+## Commitlint Conventional Commit Check
+
+This workflow checks if the commit messages follow the Conventional Commit format. It does not require any inputs.
+
+### Usage
+
+```yaml
+on:
+  push:
+  pull_request:
+    types: [opened, synchronize]
+jobs:
+  commitlint:
+    uses: eu-LISA/ecodex-workflows/.github/workflows/commitlint.yaml
+```
+
