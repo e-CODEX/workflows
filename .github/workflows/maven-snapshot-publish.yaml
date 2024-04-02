@@ -26,6 +26,8 @@ on:
 jobs:
   publish-snapshot:
     name: Publish Snapshot to Maven Repository
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -45,6 +47,9 @@ jobs:
               "username": "${{ secrets.MAVEN_NAME }}",
               "password": "${{ secrets.MAVEN_SECRET }}"
             }]
+
+      - name: Submit Dependency Snapshot to GitHub Advanced Security
+        uses: advanced-security/maven-dependency-submission-action@v4
 
       - name: Publish Snapshot
         run: mvn -B -e deploy -DrepositoryId=${{ inputs.maven-repo-id }} ${{ inputs.maven-parameters }}

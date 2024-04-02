@@ -65,11 +65,6 @@ jobs:
         run: |
           mvn -B -e clean package ${{ inputs.maven-parameters }}
 
-      - name: SBOM submission action
-        uses: evryfs/sbom-dependency-submission-action@v0.0.14
-        with:
-          sbom-files: ${{ inputs.sbom-path }}
-
       - name: Upload SBOM to GitHub as an artifact
         uses: actions/upload-artifact@v4
         with:
