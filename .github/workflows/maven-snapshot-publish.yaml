@@ -39,7 +39,7 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ inputs.java-version }}
 
-      - uses: s4u/maven-settings-action@2300ba896e2a0be8220124cb57bba875435d108b # v3.0.0
+      - uses: s4u/maven-settings-action@a72cf9566e172a206892b0ece627c8063ec66715 # v3.0.0
         with:
           servers: |
             [{
