@@ -18,7 +18,7 @@ jobs:
     uses: eu-LISA/ecodex-workflows/.github/workflows/sonar-java.yaml@main
     with:
         jacoco-xml-report-path: 'target/site/jacoco/jacoco.xml'
-        java-version: '17'
+        java-version: 17
         build-tool: 'maven'
     secrets: inherit
 ```
@@ -68,7 +68,7 @@ jobs:
   CI:
     uses: eu-LISA/ecodex-workflows/.github/workflows/maven-ci.yaml@main
     with:
-      java-version: '17' 
+      java-version: 17
       maven-parameters: '-Djacoco.skip=true'
       sbom-path: 'target/bom.xml'
       artifact-path: 'target/*.jar'
@@ -100,7 +100,7 @@ jobs:
   publish:
     uses: eu-LISA/ecodex-workflows/.github/workflows/maven-publish-snapshot.yaml@main
     with:
-      java-version: '17'
+      java-version: 17
       maven-parameters: '-DrepositoryId=artifactory'
       maven-repo-id: 'artifactory'
     secrets:
