@@ -1,0 +1,52 @@
+on:
+    workflow_call:
+      inputs:
+        java-version:
+          required: true
+          type: number
+          description: "Java version to compile." 
+          default: 21
+        build-tool:
+          required: true
+          type: string
+          description: "Build tool to use for the analysis. Must be 'maven' or 'gradle'. Use wrapper for gradle."
+          default: 'maven' 
+  
+jobs:
+  codeql:
+    permissions:
+        security-events: write # required for uploading SARIF files
+    name: Analyze Java ${{ inputs.java-version }} with ${{ inputs.build-tool }} using CodeQL
+    runs-on: ubuntu-latest      
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ inputs.java-version }}
+          cache: ${{ inputs.build-tool }}
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: java-kotlin
+          build-mode: manual
+
+      - name: Run build (Maven)
+        if: ${{ inputs.build-tool == 'maven' }}
+        run: |
+          mvn -B package -DskipTests=true
+        
+      - name: Run build (Gradle)
+        if: ${{ inputs.build-tool == 'gradle' }}
+        run: |
+          ./gradlew build
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3

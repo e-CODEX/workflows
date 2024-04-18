@@ -29,6 +29,8 @@ jobs:
 | `java-version`           | Java version to use for the analysis. Must be 17 or higher      | Yes      | 21      |
 | `build-tool`             | Build tool to use for the analysis. Must be 'maven' or 'gradle' | Yes      | 'maven' |
 
+>Note: Building with Gradle requires the use of the Gradle wrapper.
+
 It also requires the following secret:
 
 | Name          | Description      | Required |
@@ -124,4 +126,36 @@ It also requires the following secrets:
 | `MAVEN_SECRET` | Maven repository password | Yes      |
 
 
+## CodeQL Java Analysis
 
+This workflow runs a CodeQL analysis on a Java project. It requires the following inputs:
+
+### Usage
+
+```yaml
+on:
+  push:
+    branches:
+      - develop
+    pull_request:
+      branches:
+        - develop  
+    schedule:
+    - cron: '36 15 * * 1'    
+
+jobs:
+  codeql:
+    uses: eu-LISA/ecodex-workflows/.github/workflows/codeql-java.yaml@main
+    with:
+      java-version: 21
+      build-tool: 'maven'
+```
+
+It requires the following inputs:
+
+| Name               | Description                                                      | Required | Default |
+| ------------------ | ---------------------------------------------------------------- | -------- | ------- |
+| `java-version`     | Java version to use for the analysis. Must be 17 or higher       | Yes      | 21      |
+| `build-tool`       | Build tool to use for the analysis. Must be 'maven' or 'gradle'  | Yes      | 'maven' |
+
+> Note: Building with Gradle requires the use of the Gradle wrapper.
