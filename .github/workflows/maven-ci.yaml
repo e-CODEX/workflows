@@ -3,9 +3,9 @@ on:
   workflow_call:
     inputs:
       java-version:
-        description: "Java version to use for the build. (Tests are run on LTS versions)"
+        description: "Java version to use for the build. (Tests are run on the latest LTS version)"
         required: true
-        default: 17
+        default: 21
         type: number
       maven-parameters:
         description: "Extra parameters to pass to Maven"
@@ -29,7 +29,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-14, macos-13, ubuntu-latest] # Macos 13 is x86-64 and 14 is aarch64
-        java-version: [17, 21]
+        java-version: [21]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
