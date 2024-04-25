@@ -100,7 +100,7 @@ on:
       - main
 jobs:
   publish:
-    uses: eu-LISA/ecodex-workflows/.github/workflows/maven-publish-snapshot.yaml@main
+    uses: eu-LISA/ecodex-workflows/.github/workflows/maven-snapshot-publish.yaml@main
     with:
       java-version: 21
       maven-parameters: '-DrepositoryId=artifactory'
