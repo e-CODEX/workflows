@@ -159,3 +159,21 @@ It requires the following inputs:
 | `build-tool`       | Build tool to use for the analysis. Must be 'maven' or 'gradle'  | Yes      | 'maven' |
 
 > Note: Building with Gradle requires the use of the Gradle wrapper.
+
+## Checkstyle Java Linting
+
+This workflow runs the Checkstyle linter with our [custom configuration](checkstyle.xml) based on the Google one.
+
+### Usage
+```yaml
+on: 
+  push:
+  pull_request:
+  merge_group:
+name: Java code Checkstyle
+jobs:
+  checkstyle:
+    uses: eu-LISA/ecodex-workflows/.github/workflows/java-linting.yaml@main
+```
+
+
