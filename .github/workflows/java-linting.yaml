@@ -1,0 +1,19 @@
+on: 
+  workflow_call:
+name: Java code Checkstyle
+jobs:
+  checkstyle:
+    name: runner / checkstyle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: 'eu-LISA/ecodex-workflows'
+          path: 'ecodex-workflows'
+          ref: 'main'
+      - uses: dbelyaev/action-checkstyle@75d36a33d687290df33aa5c853e093531292238a # v1.14.0
+        with:
+          reporter: github-pr-review
+          level: warning
+          checkstyle_config: ecodex-workflows/checkstyle.xml
