@@ -162,7 +162,7 @@ It requires the following inputs:
 
 ## Checkstyle Java Linting
 
-This workflow runs the Checkstyle linter with our [custom configuration](checkstyle.xml) based on the Google one.
+This workflow runs the Checkstyle linter with our [custom configuration](checkstyle.xml) based on the Google one. You can set up your IDE to track this config file with the URL: `https://raw.githubusercontent.com/eu-LISA/ecodex-workflows/main/checkstyle.xml`
 
 ### Usage
 ```yaml
