@@ -12,7 +12,7 @@ jobs:
           repository: 'eu-LISA/ecodex-workflows'
           path: 'ecodex-workflows'
           ref: 'main'
-      - uses: dbelyaev/action-checkstyle@75d36a33d687290df33aa5c853e093531292238a # v1.14.0
+      - uses: dbelyaev/action-checkstyle@c4a0d95ce79c7b008f95db5e7a02c89c4db0f264 # v1.15.0
         with:
           reporter: github-pr-review
           level: warning
