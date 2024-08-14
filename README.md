@@ -29,8 +29,11 @@ jobs:
 | `java-version`           | Java version to use for the analysis. Must be 17 or higher      | Yes      | 21      |
 | `build-tool`             | Build tool to use for the analysis. Must be 'maven' or 'gradle' | Yes      | 'maven' |
 
->Note: Building with Gradle requires the use of the Gradle wrapper.
->Note: Using jacoco-xml-report-path with multi module can be problematic.
+> [!IMPORTANT]
+> Building with Gradle requires the use of the Gradle wrapper.
+
+> [!TIP]
+>  Using jacoco-xml-report-path with multi module can be problematic.
 
 
 It also requires the following secret:
@@ -160,7 +163,8 @@ It requires the following inputs:
 | `java-version`     | Java version to use for the analysis. Must be 17 or higher       | Yes      | 21      |
 | `build-tool`       | Build tool to use for the analysis. Must be 'maven' or 'gradle'  | Yes      | 'maven' |
 
-> Note: Building with Gradle requires the use of the Gradle wrapper.
+> [!IMPORTANT]
+> Building with Gradle requires the use of the Gradle wrapper.
 
 ## Checkstyle Java Linting
 
