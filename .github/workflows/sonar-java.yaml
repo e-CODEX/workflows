@@ -49,14 +49,15 @@ jobs:
 
       - name: Run SonarCloud analysis (Maven)
         if: ${{ inputs.build-tool == 'maven' }}
+        env:
+            JACOCO_REPORT_PATH: ${{ inputs.jacoco-xml-report-path }}
         run: |
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
           -Dsonar.organization=eulisa \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.java.binaries=target/classes \
-          ${{ inputs.jacoco-xml-report-path != '' && "-Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.jacoco-xml-report-path }}" || "" }}
-
+          ${{ env.JACOCO_REPORT_PATH != '' && format('-Dsonar.coverage.jacoco.xmlReportPaths={0}', env.JACOCO_REPORT_PATH) || '' }}
           
        
       - name: Run SonarCloud analysis (Gradle)
