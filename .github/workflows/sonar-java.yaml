@@ -2,7 +2,7 @@ on:
   workflow_call:
     inputs:
       jacoco-xml-report-path:
-        required: true
+        required: false
         type: string
         description: "Path to the coverage report geneearated by JaCoCo"
       java-version:
@@ -55,7 +55,9 @@ jobs:
           -Dsonar.organization=eulisa \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.java.binaries=target/classes \
-          -Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.jacoco-xml-report-path }}
+          ${{ inputs.jacoco-xml-report-path != '' && "-Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.jacoco-xml-report-path }}" || "" }}
+
+          
        
       - name: Run SonarCloud analysis (Gradle)
         if: ${{ inputs.build-tool == 'gradle' }}
