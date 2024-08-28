@@ -11,21 +11,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/checkout@v4
+        with:
+          repository: 'eu-LISA/ecodex-workflows'
+          path: 'ecodex-workflows'
+          ref: 'main'     
+
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
           node-version: '21'
 
-      - name: Install commitlint
+      - name: Install commitlint and copy shared commitlint configuration
         run: |
           npm install @commitlint/config-conventional
           npm install commitlint@latest
-          echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js    
+          mv ./ecodex-workflows/commitlint.config.js ./commitlint.config.js    
 
       - name: Validate current commit (last commit) with commitlint
         if: github.event_name == 'push'
-        run: npx commitlint --last --verbose 
+        run: npx commitlint --last --verbose --print-config
 
       - name: Validate PR commits with commitlint
         if: github.event_name == 'pull_request'
-        run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
+        run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose --print-config
