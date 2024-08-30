@@ -54,7 +54,7 @@ jobs:
         run: |
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-          -Dsonar.organization=eulisa \
+          -Dsonar.organization=e-codex \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.java.binaries=target/classes \
           ${{ env.JACOCO_REPORT_PATH != '' && format('-Dsonar.coverage.jacoco.xmlReportPaths={0}', env.JACOCO_REPORT_PATH) || '' }}
@@ -64,7 +64,7 @@ jobs:
         if: ${{ inputs.build-tool == 'gradle' }}
         run: |
           ./gradlew sonarqube \
-          -Dsonar.organization=eulisa \
+          -Dsonar.organization=e-codex \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.java.binaries=build/classes/java/main \
           -Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.jacoco-xml-report-path }} \

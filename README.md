@@ -15,7 +15,7 @@ on:
     types: [opened, synchronize, reopened]
 jobs:
   sonar:
-    uses: eu-LISA/ecodex-workflows/.github/workflows/sonar-java.yaml@main
+    uses: e-CODEX/workflows/.github/workflows/sonar-java.yaml@main
     with:
         jacoco-xml-report-path: 'target/site/jacoco/jacoco.xml'
         java-version: 21
@@ -55,7 +55,7 @@ on:
     types: [opened, synchronize]
 jobs:
   commitlint:
-    uses: eu-LISA/ecodex-workflows/.github/workflows/commitlint.yaml@main
+    uses: e-CODEX/workflows/.github/workflows/commitlint.yaml@main
 ```
 
 ## Java CI with Maven
@@ -73,7 +73,7 @@ on:
 
 jobs:
   CI:
-    uses: eu-LISA/ecodex-workflows/.github/workflows/maven-ci.yaml@main
+    uses: e-CODEX/workflows/.github/workflows/maven-ci.yaml@main
     with:
       java-version: 21
       maven-parameters: '-Djacoco.skip=true'
@@ -105,7 +105,7 @@ on:
       - main
 jobs:
   publish:
-    uses: eu-LISA/ecodex-workflows/.github/workflows/maven-snapshot-publish.yaml@main
+    uses: e-CODEX/workflows/.github/workflows/maven-snapshot-publish.yaml@main
     with:
       java-version: 21
       maven-parameters: '-DrepositoryId=artifactory'
@@ -150,7 +150,7 @@ on:
 
 jobs:
   codeql:
-    uses: eu-LISA/ecodex-workflows/.github/workflows/codeql-java.yaml@main
+    uses: e-CODEX/workflows/.github/workflows/codeql-java.yaml@main
     with:
       java-version: 21
       build-tool: 'maven'
@@ -168,7 +168,7 @@ It requires the following inputs:
 
 ## Checkstyle Java Linting
 
-This workflow runs the Checkstyle linter with our [custom configuration](checkstyle.xml) based on the Google one. You can set up your IDE to track this config file with the URL: `https://raw.githubusercontent.com/eu-LISA/ecodex-workflows/main/checkstyle.xml`
+This workflow runs the Checkstyle linter with our [custom configuration](checkstyle.xml) based on the Google one. You can set up your IDE to track this config file with the URL: `https://raw.githubusercontent.com/e-CODEX/workflows/main/checkstyle.xml`
 
 ### Usage
 ```yaml
@@ -179,7 +179,7 @@ on:
 name: Java code Checkstyle
 jobs:
   checkstyle:
-    uses: eu-LISA/ecodex-workflows/.github/workflows/java-linting.yaml@main
+    uses: e-CODEX/workflows/.github/workflows/java-linting.yaml@main
 ```
 
 

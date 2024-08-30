@@ -13,8 +13,8 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          repository: 'eu-LISA/ecodex-workflows'
-          path: 'ecodex-workflows'
+          repository: 'e-CODEX/workflows'
+          path: 'workflows'
           ref: 'main'     
 
       - name: Setup Node.js environment
@@ -26,7 +26,7 @@ jobs:
         run: |
           npm install @commitlint/config-conventional
           npm install commitlint@latest
-          mv ./ecodex-workflows/commitlint.config.js ./commitlint.config.js    
+          mv ./workflows/commitlint.config.js ./commitlint.config.js    
 
       - name: Validate current commit (last commit) with commitlint
         if: github.event_name == 'push'
