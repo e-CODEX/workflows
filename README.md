@@ -93,7 +93,7 @@ It requires the following inputs:
 
 ## Maven Snapshot Publish to Repository
 
-This workflow publishes a Maven snapshot to a Maven repository. It assumes that the `deploy` goal is configured to deploy the artifacts to a repository.
+This workflow publishes a Maven snapshot to a JFROG Maven repository. It assumes that the `deploy` goal is configured to deploy the artifacts to a repository.
 It also assumes that the repository URL is configured in the `pom.xml` file, also that the server id is the same as the one supplied in the `maven-repo-id` input.
 
 ### Usage
@@ -110,9 +110,6 @@ jobs:
       java-version: 21
       maven-parameters: '-DrepositoryId=artifactory'
       maven-repo-id: 'artifactory'
-    secrets:
-      MAVEN_NAME: ${{ secrets.MAVEN_NAME }}
-      MAVEN_SECRET: ${{ secrets.MAVEN_SECRET }}
 ```
 
 It requires the following inputs:
@@ -122,13 +119,6 @@ It requires the following inputs:
 | `java-version`     | Java version to use for the build. | Yes      | 21      |
 | `maven-parameters` | Extra parameters to pass to Maven  | No       | -       |
 | `maven-repo-id`    | Maven repository ID                | Yes      | -       |
-
-It also requires the following secrets:
-
-| Name           | Description               | Required |
-| -------------- | ------------------------- | -------- |
-| `MAVEN_NAME`   | Maven repository username | Yes      |
-| `MAVEN_SECRET` | Maven repository password | Yes      |
 
 
 ## CodeQL Java Analysis

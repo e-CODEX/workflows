@@ -22,6 +22,8 @@ jobs:
     name: Publish Snapshot to Maven Repository
     permissions:
       contents: write
+      attestations: write # Required for attestation
+      id-token: write # Required for JFrog CLI setup
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
