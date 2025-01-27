@@ -12,7 +12,7 @@ jobs:
           repository: 'e-CODEX/workflows'
           path: 'workflows'
           ref: 'main'
-      - uses: dbelyaev/action-checkstyle@3e88cc416c4e627f24a99507bc5db5dbeccf572d # v1.16.10
+      - uses: dbelyaev/action-checkstyle@34c664d3367d6d2cbf461502d5280900f7f0d9d9 # v1.16.12
         with:
           reporter: github-pr-review
           level: warning
