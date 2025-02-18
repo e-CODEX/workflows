@@ -19,6 +19,7 @@ This repository contains reusable workflows for the e-Codex project.
       - [Maven CI Usage](#maven-ci-usage)
     - [Maven Snapshot Publish to Repository](#maven-snapshot-publish-to-repository)
       - [Maven Snaphot Usage](#maven-snaphot-usage)
+      - [Maven Release Usage](#maven-release-usage)
   - [Github Related](#github-related)
     - [Commitlint Conventional Commit Check](#commitlint-conventional-commit-check)
       - [Commitlint Usage](#commitlint-usage)
@@ -181,7 +182,31 @@ It requires the following inputs:
 This workflow publishes a Maven snapshot to a JFROG Maven repository. It assumes that the `deploy` goal is configured to deploy the artifacts to a repository.
 It also assumes that the repository URL is configured in the `pom.xml` file, also that the server id is the same as the one supplied in the `maven-repo-id` input.
 
-#### Maven Snaphot Usage
+#### Maven Snapshot Usage
+
+```yaml
+on:
+  push:
+    branches:
+      - develop
+jobs:
+  publish:
+    uses: e-CODEX/workflows/.github/workflows/maven-snapshot-publish.yaml@main
+    with:
+      java-version: 21
+      maven-parameters: '-DrepositoryId=artifactory'
+      maven-repo-id: 'artifactory'
+```
+
+It requires the following inputs:
+
+| Name               | Description                        | Required | Default |
+| ------------------ | ---------------------------------- | -------- | ------- |
+| `java-version`     | Java version to use for the build. | Yes      | 21      |
+| `maven-parameters` | Extra parameters to pass to Maven  | No       | -       |
+| `maven-repo-id`    | Maven repository ID                | Yes      | -       |
+
+#### Maven Release Usage
 
 ```yaml
 on:
@@ -190,11 +215,19 @@ on:
       - main
 jobs:
   publish:
-    uses: e-CODEX/workflows/.github/workflows/maven-snapshot-publish.yaml@main
-    with:
-      java-version: 21
-      maven-parameters: '-DrepositoryId=artifactory'
-      maven-repo-id: 'artifactory'
+    steps:
+      - name: Check the current release version
+        uses: e-CODEX/workflows/.github/workflows/maven-validate-release-version.yaml@main
+        
+      - name: Tag the current release version
+        uses: e-CODEX/workflows/.github/workflows/maven-tag-release-version .yaml@main
+        
+      - name: Publish the current release version
+        uses: e-CODEX/workflows/.github/workflows/maven-release-publish.yaml@main
+        with:
+            java-version: 21
+            maven-repo-id: 'releases'
+        
 ```
 
 It requires the following inputs:

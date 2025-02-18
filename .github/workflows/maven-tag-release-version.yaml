@@ -1,0 +1,29 @@
+name: "Tag Release Version"
+on:
+    workflow_call:
+jobs:
+    tag-version:
+        name: "Tag Release Version"
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+
+            -   name: Set up Java
+                uses: actions/setup-java@v3
+                with:
+                    java-version: "21"
+
+            -   name: Get version from pom.xml
+                run: |
+                    # Use Maven to extract the version from the pom.xml file
+                    VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+                    echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+            -   name: Create Git tag
+                run: |
+                    if [ -z "$VERSION" ]; then
+                        echo "Version not found in pom.xml"
+                        exit 1
+                    fi
+                    git tag "v$VERSION"

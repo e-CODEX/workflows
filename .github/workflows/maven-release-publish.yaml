@@ -1,0 +1,59 @@
+name: "Publish Release to Maven Repository"
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: "Java version to use for the build."
+        required: true
+        type: number
+        default: 21
+      maven-parameters:
+        description: "Extra parameters to pass to Maven"
+        required: false
+        type: string
+        default: ""
+      maven-repo-id:
+        description: "Maven repository ID"
+        required: true
+        type: string
+
+jobs:        
+  publish-release:
+    name: Publish Release to Maven Repository
+    permissions:
+      contents: write
+      attestations: write # Required for attestation
+      id-token: write # Required for JFrog CLI setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ inputs.java-version }}
+
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
+        id: setup-jfrog-cli
+        env:
+            JF_URL: https://scm.ecodex.eu
+        with:
+            oidc-provider-name: setup-jfrog   
+
+      - uses: s4u/maven-settings-action@v3.1.0
+        with:
+          servers: |
+            [{
+              "id": "${{ inputs.maven-repo-id }}",
+              "username": "${{ steps.setup-jfrog-cli.outputs.oidc-user }}",
+              "password": "${{ steps.setup-jfrog-cli.outputs.oidc-token }}"
+            }]
+
+      - name: Submit Dependency Release to GitHub Advanced Security
+        uses: advanced-security/maven-dependency-submission-action@v4
+
+      - name: Publish Release
+        run: mvn -B -e deploy -DrepositoryId=${{ inputs.maven-repo-id }} ${{ inputs.maven-parameters }}
