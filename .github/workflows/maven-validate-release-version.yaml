@@ -8,9 +8,17 @@ jobs:
         steps:
             -   name: Checkout code
                 uses: actions/checkout@v4
+
+            -   name: Set up Java
+                uses: actions/setup-java@v4
+                with:
+                    distribution: 'temurin'
+                    java-version: "21"
+
             -   name: Check version against SNAPSHOT
                 run: |
-                    VERSION=$(xmllint --xpath "string(//project/version)" pom.xml)
+                    # Use Maven to extract the version from the pom.xml file
+                    VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
                     # Check if the version is a snapshot
                     if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
                         echo "Error: Version $VERSION is a SNAPSHOT version. Please use a final version."
