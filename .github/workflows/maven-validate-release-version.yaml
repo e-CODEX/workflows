@@ -1,29 +1,28 @@
 name: "Check Maven Release"
 on:
-    workflow_call:
+  workflow_call:
 jobs:
-    check-version:
-        name: "Check Maven Release"
-        runs-on: ubuntu-latest
-        steps:
-            -   name: Checkout code
-                uses: actions/checkout@v4
+  check-version:
+    name: "Check Maven Release"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            -   name: Set up Java
-                uses: actions/setup-java@v4
-                with:
-                    distribution: 'temurin'
-                    java-version: "21"
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: "21"
 
-            -   name: Check version against SNAPSHOT
-                run: |
-                    # Use Maven to extract the version from the pom.xml file
-                    VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-                    # Check if the version is a snapshot
-                    if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
-                        echo "Error: Version $VERSION is a SNAPSHOT version. Please use a final version."
-                        exit 1
-                    else
-                        echo "Version $VERSION is a final version."
-                    fi
-
+      - name: Check version against SNAPSHOT
+        run: |
+          # Use Maven to extract the version from the pom.xml file
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          # Check if the version is a snapshot
+          if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
+              echo "Error: Version $VERSION is a SNAPSHOT version. Please use a final version."
+              exit 1
+          else
+              echo "Version $VERSION is a final version."
+          fi
