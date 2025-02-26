@@ -55,5 +55,20 @@ jobs:
       - name: Submit Dependency Snapshot to GitHub Advanced Security
         uses: advanced-security/maven-dependency-submission-action@v4
 
+      - name: Check if version is Snapshot
+        id: check-version
+        run: |
+          # Use Maven to extract the version from the pom.xml file
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          # Check if the version is a snapshot
+          if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
+              echo "Version $VERSION is a SNAPSHOT version."
+              echo "snapshot=true" >> "$GITHUB_OUTPUT" 1
+          else
+              echo "Version $VERSION is a final version."
+              echo "snapshot=false" >> "$GITHUB_OUTPUT" 1
+          fi
+
       - name: Publish Snapshot
+        if: ${{ steps.check-version.outputs.snapshot == 'true' }}
         run: mvn -B -e deploy -DrepositoryId=${{ inputs.maven-repo-id }} ${{ inputs.maven-parameters }}
