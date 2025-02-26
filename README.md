@@ -191,7 +191,7 @@ on:
       - develop
 jobs:
   publish:
-    uses: e-CODEX/workflows/.github/workflows/maven-snapshot-publish.yaml@main
+    uses: e-CODEX/workflows/.github/workflows/maven-publish-snapshot.yaml@main
     with:
       java-version: 21
       maven-parameters: '-DrepositoryId=artifactory'
@@ -223,7 +223,7 @@ jobs:
         uses: e-CODEX/workflows/.github/workflows/maven-tag-release-version .yaml@main
         
       - name: Publish the current release version
-        uses: e-CODEX/workflows/.github/workflows/maven-release-publish.yaml@main
+        uses: e-CODEX/workflows/.github/workflows/maven-publish-release.yaml@main
         with:
             java-version: 21
             maven-repo-id: 'releases'
