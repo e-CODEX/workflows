@@ -31,4 +31,4 @@ jobs:
           fi
           git tag "$VERSION"
           git push origin "$VERSION"
-          echo "::set-output name=tag::$VERSION"
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
