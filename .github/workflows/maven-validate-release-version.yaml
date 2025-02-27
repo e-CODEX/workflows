@@ -8,6 +8,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-tags: true
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -25,4 +27,16 @@ jobs:
               exit 1
           else
               echo "Version $VERSION is a final version."
+          fi
+          
+      - name: Check if the tag already exists
+        run: |
+          # Fetch all tags from the remote repository
+          git fetch --tags
+          # Check if a tag with the current version already exists
+          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
+              echo "Error: Tag $VERSION already exists. Please use a different version."
+              exit 1
+          else
+              echo "Tag $VERSION does not exist. Proceeding with the workflow."
           fi
