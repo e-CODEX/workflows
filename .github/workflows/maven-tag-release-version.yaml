@@ -1,10 +1,16 @@
 name: "Tag Release Version"
 on:
   workflow_call:
+    outputs:
+      tag:
+        description: 'The tag created for the release version'
+        value: ${{ jobs.tag-version.outputs.tag }}
 jobs:
   tag-version:
     name: "Tag Release Version"
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,10 +24,11 @@ jobs:
       - name: Create Git tag
         run: |
           # Use Maven to extract the version from the pom.xml file
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout) >> $GITHUB_ENV
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           if [ -z "$VERSION" ]; then
               echo "Version not found in pom.xml"
               exit 1
           fi
           git tag "$VERSION"
           git push origin "$VERSION"
+          echo "::set-output name=tag::$VERSION"
