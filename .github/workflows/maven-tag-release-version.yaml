@@ -22,6 +22,7 @@ jobs:
           java-version: "21"
 
       - name: Create Git tag
+        id: set_tag
         run: |
           # Use Maven to extract the version from the pom.xml file
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
