@@ -16,6 +16,10 @@ on:
         description: "Maven repository ID"
         required: true
         type: string
+      tag:
+        description: 'The tag to checkout (optional)'
+        required: false
+        type: string  
 
 jobs:        
   publish-release:
@@ -26,8 +30,15 @@ jobs:
       id-token: write # Required for JFrog CLI setup
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
+        if: ${{ !inputs.tag }}
         uses: actions/checkout@v4
+
+      - name: Checkout tag
+        if: ${{ inputs.tag }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
 
       - name: Setup Java
         uses: actions/setup-java@v4
