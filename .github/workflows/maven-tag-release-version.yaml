@@ -32,4 +32,5 @@ jobs:
           fi
           git tag "$VERSION"
           git push origin "$VERSION"
+          echo "Created tag: $VERSION"
           echo "tag=$VERSION" >> $GITHUB_OUTPUT
