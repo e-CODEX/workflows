@@ -63,10 +63,10 @@ jobs:
           # Check if the version is a snapshot
           if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
               echo "Version $VERSION is a SNAPSHOT version."
-              echo "snapshot=true" >> "$GITHUB_OUTPUT" 1
+              echo "snapshot=true" >> "$GITHUB_OUTPUT"
           else
               echo "Version $VERSION is a final version."
-              echo "snapshot=false" >> "$GITHUB_OUTPUT" 1
+              echo "snapshot=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Publish Snapshot
