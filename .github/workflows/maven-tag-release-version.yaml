@@ -2,10 +2,6 @@ name: "Tag Release Version"
 on:
   workflow_call:
     inputs:
-      tag:
-        description: "The tag entered by the user"
-        required: false
-        type: string
       environment:
         description: "Deployment environment"
         required: false
@@ -40,12 +36,6 @@ jobs:
           if [ -z "$VERSION" ]; then
               echo "Version not found in pom.xml"
               exit 1
-          fi
-          if [ -n ${{ inputs.tag }} ]; then
-              if [ "$VERSION" != ${{ inputs.tag }} ]; then
-                  echo "Entered tag is different from version found in pom.xml"
-                  exit 1
-              fi
           fi
           git tag "$VERSION"
           git push origin "$VERSION"
