@@ -6,6 +6,11 @@ on:
         description: "The tag entered by the user"
         required: false
         type: string
+      environment:
+        description: "Deployment environment"
+        required: false
+        type: string
+        default: "production"
     outputs:
       tag:
         description: 'The tag created for the release version'
@@ -14,6 +19,7 @@ jobs:
   tag-version:
     name: "Tag Release Version"
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     outputs:
       tag: ${{ steps.set_tag.outputs.tag }}
     steps:
