@@ -19,7 +19,12 @@ on:
       tag:
         description: 'The tag to checkout (optional)'
         required: false
-        type: string  
+        type: string
+      environment:
+        description: "Deployment environment"
+        required: false
+        type: string
+        default: "production"
 
 jobs:        
   publish-release:
@@ -29,6 +34,7 @@ jobs:
       attestations: write # Required for attestation
       id-token: write # Required for JFrog CLI setup
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - name: Checkout repository
         if: ${{ !inputs.tag }}
