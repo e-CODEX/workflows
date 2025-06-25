@@ -24,9 +24,11 @@ on:
         required: false
         type: string
         default: "development"
-
-env:
-  REGISTRY: scm.ecodex.eu/docker
+      registry:
+        description: "Docker registry to push images to"
+        required: true
+        type: string
+        default: "scm.ecodex.eu/docker"
 
 permissions:
   contents: read
@@ -67,7 +69,7 @@ jobs:
       - name: Authenticate Docker client
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ${{ inputs.registry }}
           username: ${{ steps.setup-jfrog-cli.outputs.oidc-user }}
           password: ${{ steps.setup-jfrog-cli.outputs.oidc-token }}
 
@@ -76,7 +78,7 @@ jobs:
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           context: git
-          images: ${{ env.REGISTRY }}/${{ inputs.image-name }}
+          images: ${{ inputs.registry }}/${{ inputs.image-name }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -97,7 +99,7 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@db473fddc028af60658334401dc6fa3ffd8669fd # v2.3.0
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ inputs.image-name }}
+          subject-name: ${{ inputs.registry }}/${{ inputs.image-name }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
     
