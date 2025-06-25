@@ -26,7 +26,7 @@ on:
         default: "development"
       registry:
         description: "Docker registry to push images to"
-        required: true
+        required: false
         type: string
         default: "scm.ecodex.eu/docker"
 
