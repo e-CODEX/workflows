@@ -39,7 +39,7 @@ jobs:
           java-version: ${{ inputs.java-version }}
 
       - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
+        uses: jfrog/setup-jfrog-cli@ff5cb544114ffc152db9cea1cd3d5978d5074946 # v4.5.11
         id: setup-jfrog-cli
         env:
             JF_URL: https://scm.ecodex.eu
