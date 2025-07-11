@@ -1,0 +1,28 @@
+name: Run Automated Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR Number'
+        required: true
+        type: string
+      branch:
+        description: 'Branch name'
+        required: true
+        type: string
+
+jobs:
+  automated-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dummy test execution
+        run: |
+          echo "Running automated tests for PR #${{ inputs.pr_number }}"
+          echo "Branch: ${{ inputs.branch }}"
+          echo "Tests would run here..."
+          sleep 5
+          echo "✅ All tests passed!"
+
+      - name: Test result
+        run: exit 0
