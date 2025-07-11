@@ -1,3 +1,7 @@
+name: CTP Automated Testing
+
+on:
+  workflow_call:
 name: Run Automated Tests
 
 on:
