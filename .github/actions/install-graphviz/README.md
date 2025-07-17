@@ -8,7 +8,7 @@ Add to your workflow after setting up Java:
 
 ```yaml
 - name: Install Graphviz
-  uses: ./.github/actions/install-graphviz
+  uses: e-CODEX/workflows/.github/actions/install-graphviz@main
 ```
 
 Supported platforms:
