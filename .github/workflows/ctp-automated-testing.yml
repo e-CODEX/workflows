@@ -1,10 +1,6 @@
 name: CTP Automated Testing
 
 on:
-  workflow_call:
-name: Run Automated Tests
-
-on:
   workflow_dispatch:
     inputs:
       pr_number:
@@ -15,18 +11,45 @@ on:
         description: 'Branch name'
         required: true
         type: string
+      node_version:
+        description: 'Node.js version'
+        required: true
+        default: '20'
 
 jobs:
-  automated-tests:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Dummy test execution
-        run: |
-          echo "Running automated tests for PR #${{ inputs.pr_number }}"
-          echo "Branch: ${{ inputs.branch }}"
-          echo "Tests would run here..."
-          sleep 5
-          echo "✅ All tests passed!"
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Test result
-        run: exit 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ github.event.inputs.node_version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ github.event.inputs.node_version || '20' }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
