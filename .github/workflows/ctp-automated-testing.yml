@@ -24,7 +24,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          repository: e-CODEX/ctp
           ref: ${{ github.event.inputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }} 
           fetch-depth: 0
 
       - name: Set up Node.js
@@ -45,6 +47,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          repository: e-CODEX/ctp
+          ref: ${{ github.event.inputs.branch }}
+          token: ${{ secrets.GITHUB_TOKEN }} 
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
