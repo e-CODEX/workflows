@@ -1,5 +1,4 @@
 name: Test (npm)
-
 on:
   workflow_call:
     inputs:

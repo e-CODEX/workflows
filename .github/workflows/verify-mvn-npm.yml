@@ -47,5 +47,5 @@ jobs:
             echo "No recognized project files found (pom.xml or package.json)."
             exit 1
           fi
-
+          echo "Detected project type: $project_type"
           echo "project_type=$project_type" >> "$GITHUB_OUTPUT"
