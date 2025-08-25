@@ -52,8 +52,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: ${{ inputs.branch }}
+          repository: e-CODEX/ctp
+          fetch-depth: 0
+          token: ${{ secrets.ctp_PAT_TOKEN }}
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -103,8 +105,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: ${{ inputs.branch }}
+          repository: e-CODEX/ctp
+          fetch-depth: 0
+          token: ${{ secrets.ctp_PAT_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
