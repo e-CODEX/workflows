@@ -29,8 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: ${{ inputs.branch }}
+          repository: e-CODEX/ctp
+          fetch-depth: 0
+          token: ${{ secrets.ctp_PAT_TOKEN }}
 
       - id: check
         shell: bash
