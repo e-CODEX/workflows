@@ -14,7 +14,7 @@ on:
       node_version:
         description: 'Node.js version'
         required: true
-        default: '20'
+        default: '16'
       java_version:
         description: 'Java version'
         required: true
