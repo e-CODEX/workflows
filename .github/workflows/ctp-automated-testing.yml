@@ -73,6 +73,7 @@ jobs:
     uses: ./.github/workflows/verify-mvn-npm.yml
     with:
       branch: ${{ github.event.inputs.branch }}
+    secrets: inherit
 
   build:
     needs: mvn-npm-check
