@@ -2,6 +2,12 @@ name: Detect Project - NPM or Maven
 
 on:
   workflow_call:
+    inputs:
+      branch:
+        description: "Branch name to use for the detection (for checkout)"
+        required: false
+        type: string
+        default: "main"
     outputs:
       has_pom:
         description: "Whether pom.xml exists in the given path"
@@ -22,6 +28,9 @@ jobs:
       project_type: ${{ steps.check.outputs.project_type }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.branch }}
 
       - id: check
         shell: bash

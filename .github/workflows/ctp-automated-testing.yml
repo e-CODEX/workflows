@@ -59,9 +59,11 @@ on:
 jobs:
   mnv-npm-check:
     uses: ./.github/workflows/verify-mvn-npm.yml
+    with:
+      branch: ${{ github.event.inputs.branch }}
 
   build:
-    if: ${{ github.event.inputs.run_build == 'true' }}
+    needs: mnv-npm-check
     uses: ./.github/workflows/ci-build.yaml
     with:
       is_npm: ${{ needs.mnv-npm-check.outputs.project_type == 'npm' }}
