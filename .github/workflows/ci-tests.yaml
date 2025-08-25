@@ -1,0 +1,69 @@
+name: Test (npm)
+
+on:
+  workflow_call:
+    inputs:
+        is_npm:
+            required: true
+            type: boolean
+        is_mvn:
+            required: true
+            type: boolean
+        java-version:
+            type: number
+            default: 21
+        node-version:
+            type: string
+            default: '16'
+        branch:
+            type: string
+            default: 'main'
+    outputs:
+        coverage-artifact:
+            description: "Artifact name with coverage"
+            value: ${{ jobs.test-npm.outputs.cov_artifact }}
+
+jobs:
+    test-npm:
+        if: ${{ inputs.is_npm == true }}
+        runs-on: ubuntu-latest
+        outputs:
+          cov_artifact: ${{ steps.name.outputs.cov }}
+        steps:
+          - uses: actions/checkout@v4
+            with:
+              ref: ${{ inputs.branch }}
+
+          - uses: actions/setup-node@v4
+            with:
+              node-version: ${{ inputs.node-version }}
+              cache: npm
+            
+          - run: npm ci
+
+          - run: npm run test -- --coverage
+
+          - id: name
+            run: echo "cov=coverage-lcov" >> "$GITHUB_OUTPUT"
+
+          - name: Upload coverage
+            uses: actions/upload-artifact@v4
+            with:
+              name: coverage-lcov
+              path: coverage/lcov.info
+              if-no-files-found: error
+
+    test-maven:
+        if: ${{ inputs.is_mvn == true }}
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+            with:
+              ref: ${{ inputs.branch }}
+          - uses: actions/setup-java@v4
+            with:
+              distribution: 'temurin'
+              java-version: ${{ inputs.java-version }}
+              cache: maven
+        
+        

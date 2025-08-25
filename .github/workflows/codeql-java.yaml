@@ -38,7 +38,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3.29.0
         with:
-          languages: java-kotlin
+          languages: java-kotlin, javascript
           build-mode: manual
 
       - name: Run build (Maven)
@@ -50,6 +50,12 @@ jobs:
         if: ${{ inputs.build-tool == 'gradle' }}
         run: |
           ./gradlew build
+      
+      - name: Run build (NPM)
+        if: ${{ inputs.build-tool == 'npm' }}
+        run: |
+          npm install
+          npm run build
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3.29.0

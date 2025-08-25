@@ -15,52 +15,150 @@ on:
         description: 'Node.js version'
         required: true
         default: '20'
+      java_version:
+        description: 'Java version'
+        required: true
+        default: '21'
+      docker_image:
+        description: 'Name of the dokcer image to build and push'
+        required: false
+        type: string
+        default: ''
+      run_build:
+        description: 'Run build stage'
+        required: false
+        default: false
+        type: boolean
+      run_test:
+        description: 'Run test stage'
+        required: false
+        default: false
+        type: boolean
+      run_sonarcloud:
+        description: 'Run SonarCloud analysis'
+        required: false
+        default: false
+        type: boolean
+      run_codeql:
+        description: 'Run CodeQL analysis'
+        required: false
+        default: false
+        type: boolean
+      run_qodana:
+        description: 'Run Qodana analysis'
+        required: false
+        default: false
+        type: boolean
+      run_docker:
+        description: 'Build and push Docker image'
+        required: false
+        default: false
+        type: boolean
+      run_maven_publish:
+        description: 'Publish Maven release'
+        required: false
+        default: false
+        type: boolean
 
 
 jobs:
+  mnv-npm-check:
+    uses: ./.github/workflows/verify-mvn-npm.yml
+
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          repository: e-CODEX/ctp
-          ref: ${{ github.event.inputs.branch }}
-          token: ${{ secrets.ctp_PAT_TOKEN }} 
-          fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ github.event.inputs.node_version }}
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build project
-        run: npm run build
+    if: ${{ github.event.inputs.run_build == 'true' }}
+    uses: ./.github/workflows/ci-build.yaml
+    with:
+      is_npm: ${{ needs.mnv-npm-check.outputs.project_type == 'npm' }}
+      is_mvn: ${{ needs.mnv-npm-check.outputs.project_type == 'maven' || needs.mnv-npm-check.outputs.project_type == 'both' }}
+      java-version: ${{ github.event.inputs.java_version }}
+      node-version: ${{ github.event.inputs.node_version }}
+      maven-parameters: "-DskipTests"
+      sbom-path: dist/sbom.json
+      artifact-path: dist/
+      branch: ${{ github.event.inputs.branch }}
 
   test:
+    if: ${{ github.event.inputs.run_test == 'true' }}
     runs-on: ubuntu-latest
     needs: build
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          repository: e-CODEX/ctp
           ref: ${{ github.event.inputs.branch }}
-          token: ${{ secrets.ctp_PAT_TOKEN }}
-          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ github.event.inputs.node_version || '20' }}
-          cache: npm
+          node-version: ${{ github.event.inputs.node_version }}
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run tests
         run: npm test
+
+  sonarcloud:
+    if: ${{ github.event.inputs.run_sonarcloud == 'true' }}
+    needs: test
+    uses: e-CODEX/workflows/.github/workflows/sonar-java.yaml@main
+    with:
+      java-version: 21
+      build-tool: 'maven'
+    secrets: inherit
+
+  codeql:
+    if: ${{ github.event.inputs.run_codeql == 'true' }}
+    needs: test
+    uses: e-CODEX/workflows/.github/workflows/codeql-java.yaml@main
+    with:
+      java-version: 21
+      build-tool: 'maven'
+
+  qodana:
+    if: ${{ github.event.inputs.run_qodana == 'true' }}
+    needs: test
+    uses: e-CODEX/workflows/.github/workflows/qodana.yaml@main
+    secrets: inherit
+
+  maven-validate-release-version:
+    if: ${{ github.event.inputs.run_maven_publish == 'true' }}
+    needs: test
+    uses: ./.github/workflows/maven-validate-release-version.yaml
+
+  docker-build-push:
+    if: ${{ github.event.inputs.run_docker == 'true' && github.event.inputs.docker_image != '' }} 
+    needs: test
+    uses: ./.github/workflows/docker-build-push.yaml
+    with:
+      image-name: ${{ github.event.inputs.docker_image }}
+      tag: ${{ github.sha }}
+      environment: development
+      registry: your-registry-url
+
+  maven-publish-snapshot:
+    if: ${{ github.event.inputs.run_maven_publish == 'true' }}
+    needs: test
+    uses: ./.github/workflows/maven-publish-snapshot.yaml
+    with:
+      java-version: 21
+      maven-repo-id: your-snapshot-repo-id
+      maven-parameters: "-DskipTests"
+
+  maven-tag-release-version:
+    if: ${{ github.event.inputs.run_maven_publish == 'true' }}
+    needs: maven-validate-release-version
+    uses: ./.github/workflows/maven-tag-release-version.yaml
+    with:
+      environment: other
+
+  maven-publish-release:
+    if: ${{ github.event.inputs.run_maven_publish == 'true' }}
+    needs: [maven-validate-release-version, maven-tag-release-version]
+    uses: ./.github/workflows/maven-publish-release.yaml
+    with:
+      java-version: 21
+      maven-repo-id: your-maven-repo-id
+      maven-parameters: "-DskipTests"
+      environment: other
