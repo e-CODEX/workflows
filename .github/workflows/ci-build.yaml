@@ -50,7 +50,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        os: [windows-latest, macos-14, macos-13, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest]
         java-version: [ "${{ inputs.java-version }}" ]
     runs-on: ${{ matrix.os }}
     steps:
@@ -108,7 +108,7 @@ jobs:
     name: Test NPM on ${{ matrix.os }} and Node.js ${{ matrix.node-version }}
     strategy:
       matrix:
-        os: [windows-latest, macos-14, macos-13, ubuntu-latest]
+        os: [windows-latest, ubuntu-latest]
         node-version: [ "${{ inputs.node-version }}" ]
     runs-on: ${{ matrix.os }}
     steps:
