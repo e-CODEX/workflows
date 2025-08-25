@@ -3,9 +3,9 @@ on:
       inputs:
         java-version:
           required: true
-          type: number
+          type: string
           description: "Java version to compile." 
-          default: 21
+          default: '21'
         build-tool:
           required: true
           type: string

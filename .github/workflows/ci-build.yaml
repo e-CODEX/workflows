@@ -4,8 +4,8 @@ on:
     inputs:
       java-version:
         description: "Java version to use for the build. (Tests are run on the latest LTS version)"
-        default: 21
-        type: number
+        default: '21'
+        type: string
         required: false
       node-version:
         description: "Node.js version to use for the build. (Tests are run on the latest LTS version)"
@@ -42,7 +42,6 @@ permissions:
   contents: read
 
 jobs:
-
   verify-maven:
     if: ${{ inputs.is_mvn == true }}
     name: Test Maven on ${{ matrix.os }} and JDK ${{ matrix.java-version }}

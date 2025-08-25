@@ -9,12 +9,6 @@ on:
         type: string
         default: "main"
     outputs:
-      has_pom:
-        description: "Whether pom.xml exists in the given path"
-        value: ${{ jobs.detect.outputs.has_pom }}
-      has_package_json:
-        description: "Whether package.json exists in the given path"
-        value: ${{ jobs.detect.outputs.has_package_json }}
       project_type:
         description: "Detected project type: maven | npm | both | none"
         value: ${{ jobs.detect.outputs.project_type }}

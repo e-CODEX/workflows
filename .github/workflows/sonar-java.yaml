@@ -7,9 +7,9 @@ on:
         description: "Path to the coverage report geneearated by JaCoCo"
       java-version:
         required: true
-        type: number
+        type: string
         description: "Java version to use for the analysis. Must be 17 or higher" 
-        default: 21
+        default: '21'
       build-tool:
         type: string
         description: "Build tool to use for the analysis. Must be 'maven' or 'gradle' - for java"
