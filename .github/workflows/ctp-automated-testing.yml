@@ -19,16 +19,11 @@ on:
         description: 'Java version'
         required: true
         default: '21'
-      docker_image:
-        description: 'Name of the dokcer image to build and push'
-        required: false
-        type: string
-        default: ''
-      run_build:
-        description: 'Run build stage'
-        required: false
-        default: false
-        type: boolean
+    #  docker_image:
+    #    description: 'Name of the docker image to build and push'
+    #    required: false
+    #    type: string
+    #    default: ''
       run_test:
         description: 'Run test stage'
         required: false
