@@ -26,6 +26,7 @@ jobs:
       - id: check
         shell: bash
         run: |
+          ls
           # Derive project_type
           if [ -f "pom.xml" ] && [ -f "package.json" ]; then
             project_type="both"
@@ -37,5 +38,5 @@ jobs:
             echo "No recognized project files found (pom.xml or package.json)."
             exit 1
           fi
-          
+
           echo "project_type=$project_type" >> "$GITHUB_OUTPUT"
