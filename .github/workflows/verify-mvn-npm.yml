@@ -23,16 +23,14 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
-      has_pom: ${{ steps.check.outputs.has_pom }}
-      has_package_json: ${{ steps.check.outputs.has_package_json }}
       project_type: ${{ steps.check.outputs.project_type }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch }}
           repository: e-CODEX/ctp
+          ref: ${{ github.event.inputs.branch }}
           fetch-depth: 0
-          token: ${{ secrets.CTP_PAT_TOKEN }}
+          token: ${{ secrets.ctp_PAT_TOKEN }}
 
       - id: check
         shell: bash
