@@ -2,21 +2,23 @@ on:
     workflow_call:
       inputs:
         java-version:
-          required: true
           type: string
           description: "Java version to compile." 
           default: '21'
+        node-version:
+          type: string
+          description: "Node.js version to use for the analysis" 
+          default: '16'
         build-tool:
           required: true
           type: string
-          description: "Build tool to use for the analysis. Must be 'maven' or 'gradle'. Use wrapper for gradle."
+          description: "Build tool to use for the analysis. Must be 'maven' or 'gradle' or 'npm'. Use wrapper for gradle."
           default: 'maven'
         branch:
           description: "Branch name to use for the analysis (for checkout)"
           required: false
           type: string
           
-  
 permissions:
   contents: read
 
@@ -37,11 +39,19 @@ jobs:
           token: ${{ secrets.ctp_PAT_TOKEN }}
 
       - name: Setup Java
+        if: ${{ inputs.build-tool == 'maven' || inputs.build-tool == 'gradle' }}
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
           distribution: 'temurin'
           java-version: ${{ inputs.java-version }}
           cache: ${{ inputs.build-tool }}
+      
+      - name: Setup Node.js
+        if: ${{ inputs.build-tool == 'npm' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3.29.0

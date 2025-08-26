@@ -76,7 +76,7 @@ jobs:
       branch: ${{ github.event.inputs.branch }}
     secrets: inherit
 
-  build:
+  build:    #here either we only build or we build and run Codeql 
     needs: mvn-npm-check
     uses: ./.github/workflows/ci-build.yaml
     with:
@@ -84,6 +84,7 @@ jobs:
       is_mvn: ${{ needs.mvn-npm-check.outputs.project_type == 'maven' || needs.mvn-npm-check.outputs.project_type == 'both' }}
       java-version: ${{ github.event.inputs.java_version }}
       node-version: ${{ github.event.inputs.node_version }}
+      codeql: ${{ github.event.inputs.run_codeql }}
       maven-parameters: "-DskipTests"
       sbom-path: dist/sbom.json
       artifact-path: dist/
@@ -110,13 +111,7 @@ jobs:
       build-tool: 'maven'
     secrets: inherit
 
-  codeql:
-    if: ${{ github.event.inputs.run_codeql == 'true' }}
-    needs: test
-    uses: e-CODEX/workflows/.github/workflows/codeql-java.yaml@main
-    with:
-      java-version: 21
-      build-tool: 'maven'
+
 
   qodana:
     if: ${{ github.event.inputs.run_qodana == 'true' }}
