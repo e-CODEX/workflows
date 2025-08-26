@@ -111,7 +111,7 @@ jobs:
   codeql-java:
     if: ${{ inputs.codeql == true || inputs.is_mvn == 'true' }}
     needs: build-maven
-    uses: e-CODEX/workflows/.github/workflows/codeql-java.yaml@main
+    uses: ./.github/workflows/codeql-java.yaml
     with:
       java-version: ${{ inputs.java-version }}
       build-tool: 'maven'
