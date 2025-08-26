@@ -58,6 +58,21 @@ on:
 
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug info
+        run: |
+          echo "PR Number: ${{ github.event.inputs.pr_number }}"
+          echo "Branch: ${{ github.event.inputs.branch }}"
+          echo "Node.js Version: ${{ github.event.inputs.node_version }}"
+          echo "Java Version: ${{ github.event.inputs.java_version }}"
+          echo "Run Tests: ${{ github.event.inputs.run_test }}"
+          echo "Run SonarCloud: ${{ github.event.inputs.run_sonarcloud }}"
+          echo "Run CodeQL: ${{ github.event.inputs.run_codeql }}"
+          echo "Run Qodana: ${{ github.event.inputs.run_qodana }}"
+          echo "Run Docker: ${{ github.event.inputs.run_docker }}"
+          echo "Run Maven Publish: ${{ github.event.inputs.run_maven_publish }}"
   mvn-npm-check:
     uses: ./.github/workflows/verify-mvn-npm.yml
     with:
@@ -72,7 +87,7 @@ jobs:
       is_mvn: ${{ needs.mvn-npm-check.outputs.project_type == 'maven' || needs.mvn-npm-check.outputs.project_type == 'both' }}
       java-version: ${{ github.event.inputs.java_version }}
       node-version: ${{ github.event.inputs.node_version }}
-      codeql: ${{ github.event.inputs.run_codeql}}
+      codeql: '${{ github.event.inputs.run_codeql }}'
       maven-parameters: "-DskipTests"
       sbom-path: dist/sbom.json
       artifact-path: dist/
