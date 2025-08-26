@@ -42,12 +42,26 @@ on:
         description: "Whether to run CodeQL analysis"
         required: false
         type: string
-        default: false
+        default: 'false'
 permissions:
   contents: read
   security-events: write # required for uploading SARIF files- codeql
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug info
+        run: |
+          echo "Java version: ${{ inputs.java-version }}"
+          echo "Node.js version: ${{ inputs.node-version }}"
+          echo "Maven parameters: ${{ inputs.maven-parameters }}"
+          echo "SBOM path: ${{ inputs.sbom-path }}"
+          echo "Artifact path: ${{ inputs.artifact-path }}"
+          echo "is_npm: ${{ inputs.is_npm }}"
+          echo "is_mvn: ${{ inputs.is_mvn }}"
+          echo "Branch: ${{ inputs.branch }}"
+          echo "Run CodeQL: ${{ inputs.codeql }}"
   verify-maven:
     if: ${{ inputs.is_mvn == true }}
     name: Test Maven on ${{ matrix.os }} and JDK ${{ matrix.java-version }}

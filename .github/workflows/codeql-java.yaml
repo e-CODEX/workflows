@@ -23,6 +23,15 @@ permissions:
   contents: read
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug info
+        run: |
+          echo "Java version: ${{ inputs.java-version }}"
+          echo "Node.js version: ${{ inputs.node-version }}"
+          echo "Build tool: ${{ inputs.build-tool }}"
+          echo "Branch: ${{ inputs.branch }}"
   codeql:
     permissions:
         security-events: write # required for uploading SARIF files
