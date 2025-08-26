@@ -15,10 +15,6 @@ on:
           description: "Build tool to use for the analysis. Must be 'maven' or 'gradle' or 'npm'. Use wrapper for gradle."
           default: 'maven'
 
-          
-permissions:
-  contents: read
-
 jobs:
   debug:
     runs-on: ubuntu-latest
