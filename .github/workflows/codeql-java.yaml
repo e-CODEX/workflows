@@ -31,6 +31,7 @@ jobs:
   codeql:
     permissions:
         security-events: write # required for uploading SARIF files
+        
     name: Analyze using CodeQL
     runs-on: ubuntu-latest      
     steps:
@@ -38,7 +39,7 @@ jobs:
         uses: actions/checkout@v4 # v4.2.2
         with:
           ref: ${{ github.sha }}
-          token: ${{ secrets.GITHUB_TOKEN}}
+          persist-credentials: true 
 
       - name: Setup Java
         if: ${{ inputs.build_tool == 'maven' || inputs.build_tool == 'gradle' }}
