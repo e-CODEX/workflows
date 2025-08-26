@@ -5,20 +5,21 @@ on:
     inputs:
       pr_number:
         description: 'PR Number'
-        required: true
+        required: false
+        default: ''
         type: string
       branch:
         description: 'Branch name'
-        required: true
+        required: false
         type: string
       node_version:
         description: 'Node.js version'
-        required: true
+        required: false
         default: '16'
         type: string
       java_version:
         description: 'Java version'
-        required: true
+        required: false
         default: '21'
         type: string
     #  docker_image:
