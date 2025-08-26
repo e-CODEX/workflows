@@ -41,8 +41,8 @@ on:
       codeql:
         description: "Whether to run CodeQL analysis"
         required: false
-        type: string
-        default: 'false'
+        type: boolean
+        default: false
 permissions:
   contents: read
   security-events: write # required for uploading SARIF files- codeql
