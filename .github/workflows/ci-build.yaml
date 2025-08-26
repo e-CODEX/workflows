@@ -203,7 +203,6 @@ jobs:
   codeql-npm:
     if: ${{ inputs.codeql == true || inputs.is_npm == true }}
     name: Analyze using CodeQL
-    needs: build-npm
     uses: ./.github/workflows/codeql-java.yaml
     with:
       node-version: ${{ inputs.node-version }}
