@@ -87,7 +87,7 @@ jobs:
       is_mvn: ${{ needs.mvn-npm-check.outputs.project_type == 'maven' || needs.mvn-npm-check.outputs.project_type == 'both' }}
       java-version: ${{ github.event.inputs.java_version }}
       node-version: ${{ github.event.inputs.node_version }}
-      codeql: '${{ github.event.inputs.run_codeql }}'
+      codeql: true
       maven-parameters: "-DskipTests"
       sbom-path: dist/sbom.json
       artifact-path: dist/
