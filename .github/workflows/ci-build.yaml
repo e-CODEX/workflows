@@ -45,6 +45,7 @@ on:
         default: false
 permissions:
   contents: read
+  security-events: write # required for uploading SARIF files- codeql
 
 jobs:
   verify-maven:
@@ -186,14 +187,12 @@ jobs:
   
   codeql-npm:
     if: ${{ inputs.codeql == true || inputs.is_npm == 'true' }}
-    permissions:
-      contents: read
-      security-events: write # required for uploading SARIF files
     name: Analyze using CodeQL
     needs: build-npm
     uses: ./.github/workflows/codeql-java.yaml
     with:
       node-version: ${{ inputs.node-version }}
       build-tool: 'npm'
+    secrets: inherit
       
       
