@@ -58,18 +58,6 @@ on:
 
 
 jobs:
-  checkout:
-    name: Checkout PR code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout PR
-        id: pr-checkout
-        uses: actions/checkout@v4
-        with:
-          repository: e-CODEX/ctp
-          ref: ${{ github.event.inputs.branch }}
-          fetch-depth: 0
-          token: ${{ secrets.ctp_PAT_TOKEN }}
   mvn-npm-check:
     uses: ./.github/workflows/verify-mvn-npm.yml
     with:
@@ -84,7 +72,7 @@ jobs:
       is_mvn: ${{ needs.mvn-npm-check.outputs.project_type == 'maven' || needs.mvn-npm-check.outputs.project_type == 'both' }}
       java-version: ${{ github.event.inputs.java_version }}
       node-version: ${{ github.event.inputs.node_version }}
-      codeql: ${{ github.event.inputs.run_codeql }}
+      codeql: True
       maven-parameters: "-DskipTests"
       sbom-path: dist/sbom.json
       artifact-path: dist/
