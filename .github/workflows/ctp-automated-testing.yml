@@ -1,7 +1,7 @@
-name: CTP Automated Testing
+name: Main CI Workflow 
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       pr_number:
         description: 'PR Number'
@@ -15,6 +15,7 @@ on:
         description: 'Node.js version'
         required: true
         default: '16'
+        type: string
       java_version:
         description: 'Java version'
         required: true
@@ -63,20 +64,18 @@ jobs:
     steps:
       - name: Debug info
         run: |
-          echo "PR Number: ${{ github.event.inputs.pr_number }}"
-          echo "Branch: ${{ github.event.inputs.branch }}"
-          echo "Node.js Version: ${{ github.event.inputs.node_version }}"
-          echo "Java Version: ${{ github.event.inputs.java_version }}"
-          echo "Run Tests: ${{ github.event.inputs.run_test }}"
-          echo "Run SonarCloud: ${{ github.event.inputs.run_sonarcloud }}"
-          echo "Run CodeQL: ${{ github.event.inputs.run_codeql }}"
-          echo "Run Qodana: ${{ github.event.inputs.run_qodana }}"
-          echo "Run Docker: ${{ github.event.inputs.run_docker }}"
-          echo "Run Maven Publish: ${{ github.event.inputs.run_maven_publish }}"
+          echo "PR Number: ${{ inputs.pr_number }}"
+          echo "Branch: ${{ inputs.branch }}"
+          echo "Node.js Version: ${{ inputs.node_version }}"
+          echo "Java Version: ${{ inputs.java_version }}"
+          echo "Run Tests: ${{ inputs.run_test }}"
+          echo "Run SonarCloud: ${{ inputs.run_sonarcloud }}"
+          echo "Run CodeQL: ${{ inputs.run_codeql }}"
+          echo "Run Qodana: ${{ inputs.run_qodana }}"
+          echo "Run Docker: ${{ inputs.run_docker }}"
+          echo "Run Maven Publish: ${{ inputs.run_maven_publish }}"
   mvn-npm-check:
     uses: ./.github/workflows/verify-mvn-npm.yml
-    with:
-      branch: ${{ github.event.inputs.branch }}
     secrets: inherit
 
   build:    #here either we only build or we build and run Codeql 
@@ -85,28 +84,28 @@ jobs:
     with:
       is_npm: ${{ needs.mvn-npm-check.outputs.project_type == 'npm' }}
       is_mvn: ${{ needs.mvn-npm-check.outputs.project_type == 'maven' || needs.mvn-npm-check.outputs.project_type == 'both' }}
-      java-version: ${{ github.event.inputs.java_version }}
-      node-version: ${{ github.event.inputs.node_version }}
-      codeql: ${{fromJSON(github.event.inputs.run_codeql || 'false')}}
+      java-version: ${{ inputs.java_version }}
+      node-version: ${{ inputs.node_version }}
+      codeql: ${{fromJSON(inputs.run_codeql || 'false')}}
       maven-parameters: "-DskipTests"
       sbom-path: dist/sbom.json
       artifact-path: dist/
-      branch: ${{ github.event.inputs.branch }}
+      branch: ${{ inputs.branch }}
     secrets: inherit
 
   test:
-    if: ${{ github.event.inputs.run_test == 'true' }}
+    if: ${{ inputs.run_test == 'true' }}
     uses: ./.github/workflows/ci-tests.yaml
     needs: mvn-npm-check
     with:
       is_npm: ${{ needs.mvn-npm-check.outputs.project_type == 'npm'  }}
       is_mvn: ${{ needs.mvn-npm-check.outputs.project_type == 'maven' || needs.mvn-npm-check.outputs.project_type == 'both' }}
-      java-version: ${{ github.event.inputs.java_version }}
-      node-version: ${{ github.event.inputs.node_version }}
-      branch: ${{ github.event.inputs.branch }}
+      java-version: ${{ inputs.java_version }}
+      node-version: ${{ inputs.node_version }}
+      branch: ${{ inputs.branch }}
 
   sonarcloud:
-    if: ${{ github.event.inputs.run_sonarcloud == 'true' }}
+    if: ${{ inputs.run_sonarcloud == 'true' }}
     needs: test
     uses: e-CODEX/workflows/.github/workflows/sonar-java.yaml@main
     with:
@@ -117,28 +116,28 @@ jobs:
 
 
   qodana:
-    if: ${{ github.event.inputs.run_qodana == 'true' }}
+    if: ${{ inputs.run_qodana == 'true' }}
     needs: test
     uses: e-CODEX/workflows/.github/workflows/qodana.yaml@main
     secrets: inherit
 
   maven-validate-release-version:
-    if: ${{ github.event.inputs.run_maven_publish == 'true' }}
+    if: ${{ inputs.run_maven_publish == 'true' }}
     needs: test
     uses: ./.github/workflows/maven-validate-release-version.yaml
 
   docker-build-push:
-    if: ${{ github.event.inputs.run_docker == 'true' && github.event.inputs.docker_image != '' }} 
+    if: ${{ inputs.run_docker == 'true' && inputs.docker_image != '' }} 
     needs: test
     uses: ./.github/workflows/docker-build-push.yaml
     with:
-      image-name: ${{ github.event.inputs.docker_image }}
+      image-name: ${{ inputs.docker_image }}
       tag: ${{ github.sha }}
       environment: development
       registry: your-registry-url
 
   maven-publish-snapshot:
-    if: ${{ github.event.inputs.run_maven_publish == 'true' }}
+    if: ${{ inputs.run_maven_publish == 'true' }}
     needs: test
     uses: ./.github/workflows/maven-publish-snapshot.yaml
     with:
@@ -147,14 +146,14 @@ jobs:
       maven-parameters: "-DskipTests"
 
   maven-tag-release-version:
-    if: ${{ github.event.inputs.run_maven_publish == 'true' }}
+    if: ${{ inputs.run_maven_publish == 'true' }}
     needs: maven-validate-release-version
     uses: ./.github/workflows/maven-tag-release-version.yaml
     with:
       environment: other
 
   maven-publish-release:
-    if: ${{ github.event.inputs.run_maven_publish == 'true' }}
+    if: ${{ inputs.run_maven_publish == 'true' }}
     needs: [maven-validate-release-version, maven-tag-release-version]
     uses: ./.github/workflows/maven-publish-release.yaml
     with:

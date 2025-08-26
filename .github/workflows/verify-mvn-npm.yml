@@ -2,12 +2,7 @@ name: Detect Project - NPM or Maven
 
 on:
   workflow_call:
-    inputs:
-      branch:
-        description: "Branch name to use for the detection (for checkout)"
-        required: false
-        type: string
-        default: "main"
+    
     outputs:
       project_type:
         description: "Detected project type: maven | npm | both | none"
@@ -21,10 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: e-CODEX/ctp
-          ref: ${{ github.event.inputs.branch }}
-          fetch-depth: 0
-          token: ${{ secrets.ctp_PAT_TOKEN }}
+          ref: ${{ github.sha }}
 
       - id: check
         shell: bash

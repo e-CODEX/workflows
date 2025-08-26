@@ -169,10 +169,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch }}
-          repository: e-CODEX/ctp
+          ref: ${{ github.sha }}
           fetch-depth: 0
-          token: ${{ secrets.ctp_PAT_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
