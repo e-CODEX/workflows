@@ -1,15 +1,15 @@
 on:
     workflow_call:
       inputs:
-        java-version:
+        java_version:
           type: string
           description: "Java version to compile." 
           default: '21'
-        node-version:
+        node_version:
           type: string
           description: "Node.js version to use for the analysis" 
           default: '16'
-        build-tool:
+        build_tool:
           required: true
           type: string
           description: "Build tool to use for the analysis. Must be 'maven' or 'gradle' or 'npm'. Use wrapper for gradle."
@@ -28,9 +28,9 @@ jobs:
     steps:
       - name: Debug info
         run: |
-          echo "Java version: ${{ inputs.java-version }}"
-          echo "Node.js version: ${{ inputs.node-version }}"
-          echo "Build tool: ${{ inputs.build-tool }}"
+          echo "Java version: ${{ inputs.java_version }}"
+          echo "Node.js version: ${{ inputs.node_version }}"
+          echo "Build tool: ${{ inputs.build_tool }}"
           echo "Branch: ${{ inputs.branch }}"
   codeql:
     permissions:
@@ -47,41 +47,50 @@ jobs:
           token: ${{ secrets.ctp_PAT_TOKEN }}
 
       - name: Setup Java
-        if: ${{ inputs.build-tool == 'maven' || inputs.build-tool == 'gradle' }}
+        if: ${{ inputs.build_tool == 'maven' || inputs.build_tool == 'gradle' }}
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
         with:
           distribution: 'temurin'
-          java-version: ${{ inputs.java-version }}
-          cache: ${{ inputs.build-tool }}
+          java-version: ${{ inputs.java_version }}
+          cache: ${{ inputs.build_tool }}
       
       - name: Setup Node.js
-        if: ${{ inputs.build-tool == 'npm' }}
+        if: ${{ inputs.build_tool == 'npm' }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node_version }}
           cache: npm
 
-      - name: Initialize CodeQL
+      - name: Initialize CodeQL - Java/Kotlin
+        if: ${{ inputs.build_tool == 'maven' || inputs.build_tool == 'gradle' }}
         uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3.29.0
         with:
-          languages: java-kotlin, javascript
+          languages: java-kotlin
           build-mode: manual
+      
+      - name: Initialize CodeQL - JavaScript/TypeScript
+        if: ${{ inputs.build_tool == 'npm' }}
+        uses: github/codeql-action/init@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3.29.0
+        with:
+          languages: javascript-typescript
+          build-mode: none
 
       - name: Run build (Maven)
-        if: ${{ inputs.build-tool == 'maven' }}
+        if: ${{ inputs.build_tool == 'maven' }}
         run: |
           mvn -B package -DskipTests=true
         
       - name: Run build (Gradle)
-        if: ${{ inputs.build-tool == 'gradle' }}
+        if: ${{ inputs.build_tool == 'gradle' }}
         run: |
           ./gradlew build
       
-      - name: Run build (NPM)
-        if: ${{ inputs.build-tool == 'npm' }}
-        run: |
-          npm install
-          npm run build
+    # NPM does not need to build for CodeQL      
+    #  - name: Run build (NPM)
+    #    if: ${{ inputs.build_tool == 'npm' }}
+    #    run: |
+    #      npm install
+    #      npm run build
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@ce28f5bb42b7a9f2c824e633a3f6ee835bab6858 # v3.29.0

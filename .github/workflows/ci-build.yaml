@@ -128,8 +128,8 @@ jobs:
     needs: build-maven
     uses: ./.github/workflows/codeql-java.yaml
     with:
-      java-version: ${{ inputs.java-version }}
-      build-tool: 'maven'
+      java_version: ${{ inputs.java-version }}
+      build_tool: 'maven'
 
   #test-npm:
   #  if: ${{ inputs.is_npm == true }}
@@ -161,7 +161,7 @@ jobs:
   #      run: npm test
 
   build-npm:
-    if: ${{ inputs.codeql == false && inputs.is_npm == true }}
+    if: ${{  inputs.is_npm == true }}
     name: Build NPM artifact and SBOM using Node.js ${{ inputs.node-version }}
     runs-on: ubuntu-latest
     #needs: test-npm
@@ -205,8 +205,8 @@ jobs:
     name: Analyze using CodeQL
     uses: ./.github/workflows/codeql-java.yaml
     with:
-      node-version: ${{ inputs.node-version }}
-      build-tool: 'npm'
+      node_version: ${{ inputs.node-version }}
+      build_tool: 'npm'
     secrets: inherit
       
       
