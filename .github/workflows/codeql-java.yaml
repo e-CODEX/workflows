@@ -14,10 +14,7 @@ on:
           type: string
           description: "Build tool to use for the analysis. Must be 'maven' or 'gradle' or 'npm'. Use wrapper for gradle."
           default: 'maven'
-        branch:
-          description: "Branch name to use for the analysis (for checkout)"
-          required: false
-          type: string
+
           
 permissions:
   contents: read
@@ -31,7 +28,6 @@ jobs:
           echo "Java version: ${{ inputs.java_version }}"
           echo "Node.js version: ${{ inputs.node_version }}"
           echo "Build tool: ${{ inputs.build_tool }}"
-          echo "Branch: ${{ inputs.branch }}"
   codeql:
     permissions:
         security-events: write # required for uploading SARIF files
@@ -42,7 +38,8 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.sha }}
-          
+          token: ${{ secrets.ctp_PAT_TOKEN }}
+
       - name: Setup Java
         if: ${{ inputs.build_tool == 'maven' || inputs.build_tool == 'gradle' }}
         uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
