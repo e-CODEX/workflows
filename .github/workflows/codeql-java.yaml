@@ -25,9 +25,6 @@ jobs:
           echo "Node.js version: ${{ inputs.node_version }}"
           echo "Build tool: ${{ inputs.build_tool }}"
   codeql:
-    permissions:
-        security-events: write # required for uploading SARIF files
-        
     name: Analyze using CodeQL
     runs-on: ubuntu-latest      
     steps:
@@ -36,6 +33,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: true 
+          fetch-depth: 0
 
       - name: Setup Java
         if: ${{ inputs.build_tool == 'maven' || inputs.build_tool == 'gradle' }}
