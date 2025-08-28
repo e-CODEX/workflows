@@ -5,16 +5,15 @@ on:
         required: true
   
 permissions:
-  contents: read
+    contents: write
+    security-events: write # required for uploading SARIF files
+    pull-requests: write # required for updating PR comments
+    checks: write
 
 jobs:
   qodana:
     runs-on: ubuntu-latest
-    permissions:
-        contents: write
-        security-events: write # required for uploading SARIF files
-        pull-requests: write # required for updating PR comments
-        checks: write
+
     name: Analyze with Qodana
     steps:
       - name: Checkout code
