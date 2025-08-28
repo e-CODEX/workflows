@@ -109,11 +109,11 @@ jobs:
   sonarcloud:
     if: ${{ inputs.run_sonarcloud == true }}
     needs: test
-    uses: e-CODEX/workflows/.github/workflows/sonar-java.yaml@main
+    uses: ./.github/workflows/sonar-java.yaml
     with:
       java-version: ${{ inputs.java_version }}
       jacoco-xml-report-path: 'target/site/jacoco/jacoco.xml'
-      node-version: ${{ inputs.node-version }}
+      node-version: ${{ inputs.node_version }}
       build-tool: ${{ needs.mvn-npm-check.outputs.project_type  }}
     secrets: inherit
 
