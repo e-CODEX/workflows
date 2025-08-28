@@ -6,41 +6,27 @@ on:
         type: string
         description: "Path to the coverage report geneearated by JaCoCo"
       java-version:
-        required: true
+        required: false
         type: string
         description: "Java version to use for the analysis. Must be 17 or higher" 
         default: '21'
       build-tool:
         type: string
         description: "Build tool to use for the analysis. Must be 'maven' or 'gradle' - for java"
-        default: 'maven'
-      is_npm:
-        description: "Whether the project uses NPM (package.json exists in the root)"
-        required: false
-        type: boolean
-        default: false
-      is_mvn:
-        description: "Whether the project uses Maven (pom.xml exists in the root)"
-        required: false
-        type: boolean
-      branch:
-        description: "Branch name to use for the analysis (for checkout)"
-        required: false
-        type: string
-        default: "main"
+        required: true
       node-version:
         type: string
-        default: "20"
+        default: "16"
         description: "Node.js version to use for the analysis" 
     secrets:
       SONAR_TOKEN:
         required: true
 
-permissions:
-  contents: read
+
 jobs:
   sonar-maven:
-    if: ${{ inputs.is_mvn == true }}
+    if: ${{ inputs.build-tool == 'maven' || inputs.build-tool == 'both' }}  
+    #for now gradle will not be used, but kept for future use
     name: Analyze with SonarCloud
     runs-on: ubuntu-latest   
        
@@ -91,7 +77,7 @@ jobs:
           -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   sonar-npm:
-    if: ${{ inputs.is_npm == true }}
+    if: ${{ inputs.build-tool == 'npm' }}
     name: Analyze with SonarCloud
     runs-on: ubuntu-latest      
     steps:
@@ -122,7 +108,6 @@ jobs:
             path: coverage
 
       - name: Run SonarCloud analysis (npm)
-        if: ${{ inputs.build-tool == 'npm' }}
         run: |
           npx sonar-scanner \
             -Dsonar.projectKey=e-codex_your-project-key \
