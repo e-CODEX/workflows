@@ -41,9 +41,6 @@ permissions:
 jobs:
   sonar-maven:
     if: ${{ inputs.is_mvn == true }}
-    permissions:
-        security-events: write # required for uploading SARIF files
-        pull-requests: write # required for updating PR comments
     name: Analyze with SonarCloud
     runs-on: ubuntu-latest   
        
@@ -52,10 +49,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch }}
-          repository: e-CODEX/ctp
+          ref: ${{ github.sha }}
           fetch-depth: 0
-          token: ${{ secrets.ctp_PAT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -96,19 +92,15 @@ jobs:
 
   sonar-npm:
     if: ${{ inputs.is_npm == true }}
-    permissions:
-        security-events: write # required for uploading SARIF files
-        pull-requests: write # required for updating PR comments
     name: Analyze with SonarCloud
     runs-on: ubuntu-latest      
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch }}
-          repository: e-CODEX/ctp
+          ref: ${{ github.sha }}
           fetch-depth: 0
-          token: ${{ secrets.ctp_PAT_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
