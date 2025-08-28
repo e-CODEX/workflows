@@ -95,7 +95,7 @@ jobs:
     secrets: inherit
 
   test:
-    if: ${{ inputs.run_test == 'true' }}
+    if: ${{ inputs.run_test == true }}
     uses: ./.github/workflows/ci-tests.yaml
     needs: mvn-npm-check
     with:
