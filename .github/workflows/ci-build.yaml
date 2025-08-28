@@ -201,7 +201,7 @@ jobs:
           path: ${{ inputs.artifact-path }}
   
   codeql-npm:
-    if: ${{ inputs.codeql == true || inputs.is_npm == true }}
+    if: ${{ inputs.codeql == true && inputs.is_npm == true }}
     name: Analyze using CodeQL
     uses: ./.github/workflows/codeql-java.yaml
     with:
