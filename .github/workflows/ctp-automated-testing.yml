@@ -107,7 +107,7 @@ jobs:
     secrets: inherit
 
   sonarcloud:
-    if: ${{ inputs.run_sonarcloud == 'true' }}
+    if: ${{ inputs.run_sonarcloud == true }}
     needs: test
     uses: e-CODEX/workflows/.github/workflows/sonar-java.yaml@main
     with:
