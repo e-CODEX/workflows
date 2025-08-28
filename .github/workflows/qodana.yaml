@@ -9,6 +9,7 @@ permissions:
     security-events: write # required for uploading SARIF files
     pull-requests: write # required for updating PR comments
     checks: write
+    actions: read
 
 jobs:
   qodana:
