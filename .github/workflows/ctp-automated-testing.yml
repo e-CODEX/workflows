@@ -108,7 +108,7 @@ jobs:
 
   sonarcloud:
     ##
-    needs: test
+    needs: [test, mvn-npm-check]
     uses: ./.github/workflows/sonar-java.yaml
     with:
       java-version: ${{ inputs.java_version }}
