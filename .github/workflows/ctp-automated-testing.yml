@@ -114,7 +114,7 @@ jobs:
       java-version: ${{ inputs.java_version }}
       jacoco-xml-report-path: 'target/site/jacoco/jacoco.xml'
       node-version: ${{ inputs.node_version }}
-      build-tool: ${{ needs.mvn-npm-check.outputs.project_type == 'npm'  }}
+      build-tool: ${{ needs.mvn-npm-check.outputs.project_type  }}
     secrets: inherit
 
 
