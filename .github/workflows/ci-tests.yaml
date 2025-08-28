@@ -9,8 +9,8 @@ on:
             required: true
             type: boolean
         java-version:
-            type: number
-            default: 21
+            type: string
+            default: '21'
         node-version:
             type: string
             default: '16'

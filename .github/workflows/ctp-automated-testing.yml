@@ -20,7 +20,7 @@ on:
       java_version:
         description: 'Java version'
         required: false
-        default: '21'
+        default: "21"
         type: string
     #  docker_image:
     #    description: 'Name of the docker image to build and push'
