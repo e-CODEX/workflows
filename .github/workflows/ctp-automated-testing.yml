@@ -3,11 +3,6 @@ name: Main CI Workflow
 on:
   workflow_call:
     inputs:
-      pr_number:
-        description: 'PR Number'
-        required: false
-        default: ''
-        type: string
       branch:
         description: 'Branch name'
         required: false
@@ -22,6 +17,11 @@ on:
         required: false
         default: "21"
         type: string
+      maven-parameters:
+        description: 'Extra parameters to pass to Maven'
+        required: false
+        type: string  
+        default: "-DskipTests"
     #  docker_image:
     #    description: 'Name of the docker image to build and push'
     #    required: false
@@ -65,7 +65,6 @@ jobs:
     steps:
       - name: Debug info
         run: |
-          echo "PR Number: ${{ inputs.pr_number }}"
           echo "Branch: ${{ inputs.branch }}"
           echo "Node.js Version: ${{ inputs.node_version }}"
           echo "Java Version: ${{ inputs.java_version }}"
@@ -75,6 +74,13 @@ jobs:
           echo "Run Qodana: ${{ inputs.run_qodana }}"
           echo "Run Docker: ${{ inputs.run_docker }}"
           echo "Run Maven Publish: ${{ inputs.run_maven_publish }}"
+
+  load-config:
+    uses: ./.github/workflows/load-config.yaml
+    with:
+      config-path: ci-properties.json
+    secrets: inherit
+
   mvn-npm-check:
     uses: ./.github/workflows/verify-mvn-npm.yml
     secrets: inherit
@@ -88,10 +94,7 @@ jobs:
       java-version: ${{ inputs.java_version }}
       node-version: ${{ inputs.node_version }}
       codeql: ${{fromJSON(inputs.run_codeql || 'false')}}
-      maven-parameters: "-DskipTests"
-      sbom-path: dist/sbom.json
-      artifact-path: dist/
-      branch: ${{ inputs.branch }}
+      maven-parameters: ${{ inputs.maven-parameters }}
     secrets: inherit
 
   test:
@@ -130,11 +133,11 @@ jobs:
     uses: ./.github/workflows/maven-validate-release-version.yaml
 
   docker-build-push:
-    if: ${{ inputs.run_docker == 'true' && inputs.docker_image != '' }} 
-    needs: test
+    if: ${{ inputs.run_docker == 'true' }} 
+    needs: [test, load-config]
     uses: ./.github/workflows/docker-build-push.yaml
     with:
-      image-name: ${{ inputs.docker_image }}
+      image-name: ${{ fromJson(needs.load-config.outputs.dockerImage) }}
       tag: ${{ github.sha }}
       environment: development
       registry: your-registry-url

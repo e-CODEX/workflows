@@ -1,0 +1,67 @@
+name: Load CI config
+
+on:
+  workflow_call:
+    inputs:
+      config-path:
+        description: "Path to JSON config in the caller repo"
+        required: false
+        type: string
+        default: "workflows/ci-properties.json"
+    outputs:
+      maven_sbom_path:
+        description: "Maven SBOM path"
+        value: ${{ jobs.parse.outputs.maven_sbom_path }}
+      maven_artifact_path:
+        description: "Maven artifact path"
+        value: ${{ jobs.parse.outputs.maven_artifact_path }}
+      maven_parameters:
+        description: "Extra Maven parameters"
+        value: ${{ jobs.parse.outputs.maven_parameters }}
+      npm_sbom_path:
+        description: "NPM SBOM path"
+        value: ${{ jobs.parse.outputs.npm_sbom_path }}
+      npm_artifact_path:
+        description: "NPM artifact path"
+        value: ${{ jobs.parse.outputs.npm_artifact_path }}
+      jacoco_xml_report_path:
+        description: "JaCoCo XML report path"
+        value: ${{ jobs.parse.outputs.jacoco_xml_report_path }}
+      dockerImage:
+        description: "Docker image for testing and deployment"
+        value: ${{ jobs.parse.outputs.dockerImage }}
+
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    outputs:
+      maven_sbom_path:        ${{ fromJson(steps.read.outputs.raw).mavenSbomPath }}
+      maven_artifact_path:    ${{ fromJson(steps.read.outputs.raw).mavenArtifactPath }}
+      maven_parameters:       ${{ fromJson(steps.read.outputs.raw).mavenParameters }}
+      npm_sbom_path:          ${{ fromJson(steps.read.outputs.raw).npmSbomPath }}
+      npm_artifact_path:      ${{ fromJson(steps.read.outputs.raw).npmArtifactPath }}
+      jacoco_xml_report_path: ${{ fromJson(steps.read.outputs.raw).jacocoXmlReportPath }}
+      dockerImage:            ${{ fromJson(steps.read.outputs.raw).dockerImage }}
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+        
+      # Optional: fail early if file missing (clear error)
+      - name: Ensure config file exists
+        run: |
+          test -f "${{ inputs.config-path }}" || {
+            echo "::error file=${{ inputs.config-path }}::Config file not found"
+            exit 1
+          }
+
+      # Read JSON file into a step output ("raw")
+      - name: Read JSON as output
+        id: read
+        run: |
+          echo "raw<<'EOF'" >> "$GITHUB_OUTPUT"
+          cat "${{ inputs.config-path }}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
