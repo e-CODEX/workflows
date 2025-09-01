@@ -5,6 +5,7 @@ on:
         required: false
         type: string
         description: "Path to the coverage report geneearated by JaCoCo"
+        default: "target/site/jacoco/jacoco.xml"
       java-version:
         required: false
         type: string
@@ -52,18 +53,24 @@ jobs:
             path: ~/.sonar/cache
             key: ${{ runner.os }}-sonar
             restore-keys: ${{ runner.os }}-sonar
+    
+      - name: Download sonar inputs
+        uses: actions/download-artifact@v4
+        with:
+          name: sonar-inputs
+          path: .sonar-inputs
 
       - name: Run SonarCloud analysis (Maven)
         if: ${{ inputs.build-tool == 'maven' }}
         env:
             JACOCO_REPORT_PATH: ${{ inputs.jacoco-xml-report-path }}
         run: |
-          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          mvn -B verify -DskipTests org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
           -Dsonar.organization=e-codex \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.java.binaries=target/classes \
-          ${{ env.JACOCO_REPORT_PATH != '' && format('-Dsonar.coverage.jacoco.xmlReportPaths={0}', env.JACOCO_REPORT_PATH) || '' }}
+          ${{ env.JACOCO_REPORT_PATH != '' && format('-Dsonar.coverage.jacoco.xmlReportPaths=.sonar-inputs/{0}', env.JACOCO_REPORT_PATH) || '' }}
           
        
       - name: Run SonarCloud analysis (Gradle)
@@ -73,7 +80,7 @@ jobs:
           -Dsonar.organization=e-codex \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.java.binaries=build/classes/java/main \
-          -Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.jacoco-xml-report-path }} \
+          -Dsonar.coverage.jacoco.xmlReportPaths=.sonar-inputs/${{ inputs.jacoco-xml-report-path }} \
           -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   sonar-npm:

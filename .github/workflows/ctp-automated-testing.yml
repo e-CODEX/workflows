@@ -125,7 +125,7 @@ jobs:
     secrets: inherit
 
   maven-validate-release-version:
-    if: ${{ inputs.run_maven_publish == 'true' }}
+    if: ${{ inputs.run_maven_publish == true }}
     needs: test
     uses: ./.github/workflows/maven-validate-release-version.yaml
 
