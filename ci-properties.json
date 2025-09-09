@@ -1,11 +1,11 @@
 {
-  "mavenSbomPath": "dist/sbom.json",
-  "mavenArtifactPath": "dist/",
-  "mavenParameters": "-DskipTests -Pproduction",
+
   "npmSbomPath": "dist/npm-sbom.json",
   "npmArtifactPath": "dist/npm/",
   "jacocoXmlReportPath": "target/site/jacoco/jacoco.xml",
-  "dockerImage": "scm.ecodex.eu/docker/testingCI:latest"
-
+  "dockerImage": "scm.ecodex.eu/docker/testingCI:latest",
+  "mavenSbomPath": "dist/sbom.json",
+  "mavenArtifactPath": "dist/",
+  "mavenParameters": "-DskipTests -Pproduction"
 
 }
