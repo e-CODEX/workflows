@@ -31,18 +31,15 @@ on:
         default: "scm.ecodex.eu/docker"
 
 permissions:
-  contents: read
+      contents: read
+      attestations: write # Required for attestation
+      id-token: write # Required for JFrog CLI setup
 
 jobs:
   build-and-push-image:
     name: Build and push Docker image
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    permissions:
-      contents: read
-      attestations: write # Required for attestation
-      id-token: write # Required for JFrog CLI setup
-       
     steps:
 
       - name: Checkout repository
