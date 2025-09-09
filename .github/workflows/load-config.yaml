@@ -50,6 +50,9 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
         
+      - name: ls
+        run: ls
+        
       - name: Ensure config file exists
         run: |
           test -f "${{ inputs.config-path }}" || {
