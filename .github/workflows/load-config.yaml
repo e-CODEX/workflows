@@ -50,7 +50,6 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
         
-      # Optional: fail early if file missing (clear error)
       - name: Ensure config file exists
         run: |
           test -f "${{ inputs.config-path }}" || {
@@ -58,7 +57,6 @@ jobs:
             exit 1
           }
 
-      # Read JSON file into a step output ("raw")
       - name: Read JSON as output
         id: read
         run: |
