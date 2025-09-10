@@ -7,7 +7,7 @@ on:
         description: "Path to JSON config in the caller repo"
         required: false
         type: string
-        default: "/.github/ci-properties.json"
+        default: "./.github/ci-properties.json"
     outputs:
       maven_sbom_path:
         description: "Maven SBOM path"
@@ -35,23 +35,19 @@ jobs:
   parse:
     runs-on: ubuntu-latest
     outputs:
-      maven_sbom_path:        ${{ fromJson(steps.read.outputs.raw).mavenSbomPath }}
-      maven_artifact_path:    ${{ fromJson(steps.read.outputs.raw).mavenArtifactPath }}
-      maven_parameters:       ${{ fromJson(steps.read.outputs.raw).mavenParameters }}
-      npm_sbom_path:          ${{ fromJson(steps.read.outputs.raw).npmSbomPath }}
-      npm_artifact_path:      ${{ fromJson(steps.read.outputs.raw).npmArtifactPath }}
-      jacoco_xml_report_path: ${{ fromJson(steps.read.outputs.raw).jacocoXmlReportPath }}
-      dockerImage:            ${{ fromJson(steps.read.outputs.raw).dockerImage }}
+      maven_sbom_path:        ${{ steps.cfg.outputs.maven_sbom_path }}
+      maven_artifact_path:    ${{ steps.cfg.outputs.maven_artifact_path }}
+      maven_parameters:       ${{ steps.cfg.outputs.maven_parameters }}
+      npm_sbom_path:          ${{ steps.cfg.outputs.npm_sbom_path }}
+      npm_artifact_path:      ${{ steps.cfg.outputs.npm_artifact_path }}
+      jacoco_xml_report_path: ${{ steps.cfg.outputs.jacoco_xml_report_path }}
+      dockerImage:            ${{ steps.cfg.outputs.dockerImage }}
     steps:
-      - name: Checkout 
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-        
-      - name: ls
-        run: ls
 
       - name: Ensure config file exists
         run: |
@@ -60,9 +56,20 @@ jobs:
             exit 1
           }
 
-      - name: Read JSON as output
+      - name: Read CI properties
         id: read
         run: |
-          echo "raw<<'EOF'" >> "$GITHUB_OUTPUT"
+          echo "ci_json<<EOF" >> "$GITHUB_OUTPUT"
           cat "${{ inputs.config-path }}" >> "$GITHUB_OUTPUT"
           echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Parse JSON → step outputs (empty if missing)
+        id: cfg
+        run: |
+          echo "maven_sbom_path=${{        fromJson(steps.read.outputs.ci_json).maven_sbom_path        || '' }}" >> "$GITHUB_OUTPUT"
+          echo "maven_artifact_path=${{    fromJson(steps.read.outputs.ci_json).maven_artifact_path    || '' }}" >> "$GITHUB_OUTPUT"
+          echo "maven_parameters=${{       fromJson(steps.read.outputs.ci_json).maven_parameters       || '' }}" >> "$GITHUB_OUTPUT"
+          echo "npm_sbom_path=${{          fromJson(steps.read.outputs.ci_json).npm_sbom_path          || '' }}" >> "$GITHUB_OUTPUT"
+          echo "npm_artifact_path=${{      fromJson(steps.read.outputs.ci_json).npm_artifact_path      || '' }}" >> "$GITHUB_OUTPUT"
+          echo "jacoco_xml_report_path=${{ fromJson(steps.read.outputs.ci_json).jacoco_xml_report_path || '' }}" >> "$GITHUB_OUTPUT"
+          echo "dockerImage=${{            fromJson(steps.read.outputs.ci_json).dockerImage            || '' }}" >> "$GITHUB_OUTPUT"
