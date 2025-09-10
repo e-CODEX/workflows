@@ -60,12 +60,12 @@ jobs:
         id: cfg
         run: |
           FILE="${{ inputs.config-path }}"
-          echo "maven_sbom_path=$(jq -r '.maven_sbom_path // ""' "$FILE")"               >> "$GITHUB_OUTPUT"
-          echo "maven_artifact_path=$(jq -r '.maven_artifact_path // ""' "$FILE")"       >> "$GITHUB_OUTPUT"
-          echo "maven_parameters=$(jq -r '.maven_parameters // ""' "$FILE")"             >> "$GITHUB_OUTPUT"
-          echo "npm_sbom_path=$(jq -r '.npm_sbom_path // ""' "$FILE")"                   >> "$GITHUB_OUTPUT"
-          echo "npm_artifact_path=$(jq -r '.npm_artifact_path // ""' "$FILE")"           >> "$GITHUB_OUTPUT"
-          echo "jacoco_xml_report_path=$(jq -r '.jacoco_xml_report_path // ""' "$FILE")" >> "$GITHUB_OUTPUT"
+          echo "maven_sbom_path=$(jq -r '.mavenSbomPath // ""' "$FILE")"               >> "$GITHUB_OUTPUT"
+          echo "maven_artifact_path=$(jq -r '.mavenArtifactPath // ""' "$FILE")"       >> "$GITHUB_OUTPUT"
+          echo "maven_parameters=$(jq -r '.mavenParameters // ""' "$FILE")"             >> "$GITHUB_OUTPUT"
+          echo "npm_sbom_path=$(jq -r '.npmSbomPath // ""' "$FILE")"                   >> "$GITHUB_OUTPUT"
+          echo "npm_artifact_path=$(jq -r '.npmArtifactPath // ""' "$FILE")"           >> "$GITHUB_OUTPUT"
+          echo "jacoco_xml_report_path=$(jq -r '.jacocoXmlReportPath // ""' "$FILE")" >> "$GITHUB_OUTPUT"
           echo "dockerImage=$(jq -r '.dockerImage // ""' "$FILE")"                       >> "$GITHUB_OUTPUT"
 
       - name: Print parsed values
