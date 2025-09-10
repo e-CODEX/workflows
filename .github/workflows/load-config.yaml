@@ -62,9 +62,12 @@ jobs:
       - name: Read CI properties
         id: read
         run: |
-          echo "ci_json<<EOF" >> "$GITHUB_OUTPUT"
-          cat "${{ inputs.config-path }}" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          delimiter="__CI_JSON__"
+          {
+            echo "ci_json<<$delimiter"
+            cat "${{ inputs.config-path }}"
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Parse JSON → step outputs (empty if missing)
         id: cfg
