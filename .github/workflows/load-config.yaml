@@ -7,7 +7,7 @@ on:
         description: "Path to JSON config in the caller repo"
         required: false
         type: string
-        default: "/ci-properties.json"
+        default: "./.github/ci-properties.json"
     outputs:
       maven_sbom_path:
         description: "Maven SBOM path"
@@ -49,9 +49,6 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
-      - name: Ls
-        run: ls 
-
       - name: Ensure config file exists
         run: |
           test -f "${{ inputs.config-path }}" || {
@@ -59,23 +56,14 @@ jobs:
             exit 1
           }
 
-      - name: Read CI properties
-        id: read
-        run: |
-          delimiter="__CI_JSON__"
-          {
-            echo "ci_json<<$delimiter"
-            cat "${{ inputs.config-path }}"
-            echo "$delimiter"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Parse JSON → step outputs (empty if missing)
+      - name: Parse ci-properties.json → step outputs (empty if key missing)
         id: cfg
         run: |
-          echo "maven_sbom_path=${{        fromJson(steps.read.outputs.ci_json).maven_sbom_path        || '' }}" >> "$GITHUB_OUTPUT"
-          echo "maven_artifact_path=${{    fromJson(steps.read.outputs.ci_json).maven_artifact_path    || '' }}" >> "$GITHUB_OUTPUT"
-          echo "maven_parameters=${{       fromJson(steps.read.outputs.ci_json).maven_parameters       || '' }}" >> "$GITHUB_OUTPUT"
-          echo "npm_sbom_path=${{          fromJson(steps.read.outputs.ci_json).npm_sbom_path          || '' }}" >> "$GITHUB_OUTPUT"
-          echo "npm_artifact_path=${{      fromJson(steps.read.outputs.ci_json).npm_artifact_path      || '' }}" >> "$GITHUB_OUTPUT"
-          echo "jacoco_xml_report_path=${{ fromJson(steps.read.outputs.ci_json).jacoco_xml_report_path || '' }}" >> "$GITHUB_OUTPUT"
-          echo "dockerImage=${{            fromJson(steps.read.outputs.ci_json).dockerImage            || '' }}" >> "$GITHUB_OUTPUT"
+          FILE="${{ inputs.config-path }}"
+          echo "maven_sbom_path=$(jq -r '.maven_sbom_path // ""' "$FILE")"               >> "$GITHUB_OUTPUT"
+          echo "maven_artifact_path=$(jq -r '.maven_artifact_path // ""' "$FILE")"       >> "$GITHUB_OUTPUT"
+          echo "maven_parameters=$(jq -r '.maven_parameters // ""' "$FILE")"             >> "$GITHUB_OUTPUT"
+          echo "npm_sbom_path=$(jq -r '.npm_sbom_path // ""' "$FILE")"                   >> "$GITHUB_OUTPUT"
+          echo "npm_artifact_path=$(jq -r '.npm_artifact_path // ""' "$FILE")"           >> "$GITHUB_OUTPUT"
+          echo "jacoco_xml_report_path=$(jq -r '.jacoco_xml_report_path // ""' "$FILE")" >> "$GITHUB_OUTPUT"
+          echo "dockerImage=$(jq -r '.dockerImage // ""' "$FILE")"                       >> "$GITHUB_OUTPUT"
