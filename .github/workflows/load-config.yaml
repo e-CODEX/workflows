@@ -7,7 +7,7 @@ on:
         description: "Path to JSON config in the caller repo"
         required: false
         type: string
-        default: "./.github/ci-properties.json"
+        default: "/ci-properties.json"
     outputs:
       maven_sbom_path:
         description: "Maven SBOM path"
@@ -50,7 +50,7 @@ jobs:
           fetch-depth: 0
 
       - name: Ls
-        run: ls ..
+        run: ls 
 
       - name: Ensure config file exists
         run: |
