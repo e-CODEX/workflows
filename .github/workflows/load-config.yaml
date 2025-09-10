@@ -49,6 +49,9 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
 
+      - name: Ls
+        run: ls 
+        
       - name: Ensure config file exists
         run: |
           test -f "${{ inputs.config-path }}" || {
