@@ -67,3 +67,13 @@ jobs:
           echo "npm_artifact_path=$(jq -r '.npm_artifact_path // ""' "$FILE")"           >> "$GITHUB_OUTPUT"
           echo "jacoco_xml_report_path=$(jq -r '.jacoco_xml_report_path // ""' "$FILE")" >> "$GITHUB_OUTPUT"
           echo "dockerImage=$(jq -r '.dockerImage // ""' "$FILE")"                       >> "$GITHUB_OUTPUT"
+
+      - name: Print parsed values
+        run: |
+          printf "maven_sbom_path:        '%s'\n" "${{ steps.cfg.outputs.maven_sbom_path }}"
+          printf "maven_artifact_path:    '%s'\n" "${{ steps.cfg.outputs.maven_artifact_path }}"
+          printf "maven_parameters:       '%s'\n" "${{ steps.cfg.outputs.maven_parameters }}"
+          printf "npm_sbom_path:          '%s'\n" "${{ steps.cfg.outputs.npm_sbom_path }}"
+          printf "npm_artifact_path:      '%s'\n" "${{ steps.cfg.outputs.npm_artifact_path }}"
+          printf "jacoco_xml_report_path: '%s'\n" "${{ steps.cfg.outputs.jacoco_xml_report_path }}"
+          printf "dockerImage:            '%s'\n" "${{ steps.cfg.outputs.dockerImage }}"
