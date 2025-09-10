@@ -50,7 +50,7 @@ jobs:
           fetch-depth: 0
 
       - name: Ls
-        run: ls /.github/
+        run: ls ..
 
       - name: Ensure config file exists
         run: |
