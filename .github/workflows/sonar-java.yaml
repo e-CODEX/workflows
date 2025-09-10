@@ -23,7 +23,7 @@ jobs:
   load-config:
     uses: ./.github/workflows/load-config.yaml
     with:
-      config-path: /ci-properties.json
+      config-path: ci-properties.json
     secrets: inherit
 
   sonar-maven:
