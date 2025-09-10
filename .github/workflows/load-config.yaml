@@ -50,8 +50,8 @@ jobs:
           fetch-depth: 0
 
       - name: Ls
-        run: ls 
-        
+        run: ls /.github/
+
       - name: Ensure config file exists
         run: |
           test -f "${{ inputs.config-path }}" || {
