@@ -1,0 +1,60 @@
+name: verify-env.yaml
+on:
+  workflow_call:
+    outputs:
+      environment:
+        description: "Deployment environment"
+        value: ${{ jobs.detect.outputs.environment }}
+
+jobs:
+  verify-maven-npm:
+    uses: ./.github/workflows/verify-mvn-npm.yml
+    secrets: inherit
+
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env-mvn.outputs.environment || steps.set-env-npm.outputs.environment }}
+    needs: verify-maven-npm
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Detect environment from pom.xml for Maven projects
+        id: set-env-mvn
+        if: ${{ needs.verify-maven-npm.outputs.project_type == 'maven'  }}
+        run: |
+          VERSION=$(grep -oP '(?<=<version>)[^<]+' pom.xml | head -1)
+          echo "Detected version: $VERSION"
+          if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
+            ENVIRONMENT="DEV"
+          else
+            ENVIRONMENT="PROD"
+          fi
+          echo "Determined environment: $ENVIRONMENT"
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "Set environment to $ENVIRONMENT"
+      
+      
+      - name: Detect environment from package.json for NPM projects
+        id: set-env-npm
+        if: ${{ needs.verify-maven-npm.outputs.project_type == 'npm'}}
+        run: |
+          VERSION=$(grep -oP '(?<="version": ")[^"]+' package.json | head -1)
+          echo "Detected version: $VERSION"
+          if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
+            ENVIRONMENT="DEV"
+          else
+            ENVIRONMENT="PROD"
+          fi
+          echo "Determined environment: $ENVIRONMENT"
+          echo "environment=$ENVIRONMENT" >> $GITHUB_OUTPUT
+          echo "Set environment to $ENVIRONMENT"
+
+      - name: Print output environment
+        run: echo "Output environment is ${{ steps.set-env-mvn.outputs.environment || steps.set-env-npm.outputs.environment }}"
+          

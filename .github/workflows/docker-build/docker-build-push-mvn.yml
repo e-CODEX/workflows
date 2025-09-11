@@ -1,0 +1,138 @@
+name: Create and publish Docker image
+# Create and publish a Docker image to the e-CODEX JFrog, following SemVer and GitFlow conventions
+# On pushes to develop, build and push a Docker image with the 'edge' label
+# On tag pushes to the main branch, build and push a Docker image with the 'latest' label, as well as the SemVer tags (e.g. '1.2.3', '1.2', '1')
+# On all pushes, build and push a Docker image with the short SHA checksum label
+#
+# Authentication to the e-CODEX JFrog is done using the JFrog CLI, which is configured with an OIDC token, obtained from the GitHub Actions OIDC provider
+# Attestation of the Docker image is created and pushed to the e-CODEX JFrog as well as to the GitHub Attestations API
+
+on: 
+  workflow_call:
+    inputs:
+      image-name:
+        description: 'The name of the Docker image to build and push'
+        required: true
+        default: ${{ github.repository }}
+        type: string
+      tag:
+        description: 'The github tag to checkout (optional)'
+        required: false
+        type: string
+#     environment:
+#       description: "Deployment environment"
+#       required: false
+#       type: string
+#       default: "development"
+#     registry:
+#       description: "Docker registry to push images to"
+#       required: false
+#       type: string
+#       default: "scm.ecodex.eu/docker"
+
+        ## TODO
+        ## Remove the inputs of registry and environment - MAKE IT AUTOMATIC with the package.json and pom.xml
+
+permissions:
+      contents: read
+      attestations: write # Required for attestation
+      id-token: write # Required for JFrog CLI setup
+
+jobs:
+  load-config:
+    uses: ./.github/workflows/load-config.yaml
+    with:
+      config-path: ci-properties.json
+    secrets: inherit
+
+  verify-env:
+    uses: ./.github/workflows/verify-env.yml #TODO output: if its PROD or DEV
+    secrets: inherit
+
+
+  build-and-push-image:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    needs: [verify-env, load-config, verify-env]
+    steps:
+
+      - name: Checkout repository
+        if: ${{ !inputs.tag }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Checkout tag
+        if: ${{ inputs.tag }}
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.tag }}
+        #Checkout specific github repo tag
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+              
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
+        id: setup-jfrog-cli
+        env:
+            JF_URL: https://scm.ecodex.eu
+        with:
+            oidc-provider-name: setup-jfrog    
+
+      #TODO: if PROD - registry is docker, if DEV - registry is docker-snapshots
+      - name: Authenticate Docker client for PROD
+        if: ${{ needs.verify-env.outputs.environment == 'PROD' }}
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: https://scm.ecodex.eu/docker
+          username: ${{ steps.setup-jfrog-cli.outputs.oidc-user }}
+          password: ${{ steps.setup-jfrog-cli.outputs.oidc-token }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        if: ${{ needs.verify-env.outputs.environment == 'PROD' }}
+        id: meta-PROD
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        with:
+          context: git
+          images: https://scm.ecodex.eu/docker/${{ inputs.image-name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+            type=edge,branch=develop
+        
+      - name: Authenticate Docker client for DEV
+        if: ${{ needs.verify-env.outputs.environment == 'DEV' }}
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: https://scm.ecodex.eu/ecodex-docker-snapshots
+          username: ${{ steps.setup-jfrog-cli.outputs.oidc-user }}
+          password: ${{ steps.setup-jfrog-cli.outputs.oidc-token }}
+          
+      - name: Extract metadata (tags, labels) for Docker in DEV
+        if: ${{ needs.verify-env.outputs.environment == 'DEV}}
+        id: meta-DEV
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        with:
+          context: git
+          images: https://scm.ecodex.eu/docker/${{ inputs.image-name }}
+          tags: |
+            type=semver,pattern={{version}}
+
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          push: true
+          sbom: true
+          tags: ${{ steps.meta-DEV.outputs.tags || steps.meta-PROD.outputs.tags }}
+          labels: ${{ steps.meta-DEV.outputs.labels || steps.meta-PROD.outputs.labels }}
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ${{ inputs.registry }}/${{ inputs.image-name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+    
