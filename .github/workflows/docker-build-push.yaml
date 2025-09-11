@@ -29,19 +29,27 @@ jobs:
   mvn-npm-check:
     uses: ./.github/workflows/verify-mvn-npm.yml
     secrets: inherit
+  
+  verify-env:
+    uses: ./.github/workflows/verify-env.yml #TODO output: if its PROD or DEV
+    secrets: inherit
+  
+
 
   build-and-push-image-npm:
-    needs: mvn-npm-check
+    needs: [mvn-npm-check, verify-env]
     if: ${{ needs.mvn-npm-check.outputs.project_type == 'npm' }}
     uses: ./.github/workflows/docker-build-push-npm.yml
     with:
       image-name: ${{ inputs.image-name }}
       tag: ${{ inputs.tag }}
+      environment: ${{ needs.verify-env.outputs.environment }}
 
   build-and-push-image-mvn:
-    needs: mvn-npm-check
+    needs: [mvn-npm-check, verify-env]
     if: ${{ needs.mvn-npm-check.outputs.project_type == 'maven' }}
     uses: ./.github/workflows/docker-build-push-mvn.yml
     with:
       image-name: ${{ inputs.image-name }}
       tag: ${{ inputs.tag }}
+      environment: ${{ needs.verify-env.outputs.environment }}

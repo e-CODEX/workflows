@@ -19,11 +19,10 @@ on:
         description: 'The github tag to checkout (optional)'
         required: false
         type: string
-#     environment:
-#       description: "Deployment environment"
-#       required: false
-#       type: string
-#       default: "development"
+      environment:
+       description: "Deployment environment"
+       required: true
+       type: string
 #     registry:
 #       description: "Docker registry to push images to"
 #       required: false
@@ -39,21 +38,11 @@ permissions:
       id-token: write # Required for JFrog CLI setup
 
 jobs:
-  load-config:
-    uses: ./.github/workflows/load-config.yaml
-    with:
-      config-path: ci-properties.json
-    secrets: inherit
-
-  verify-env:
-    uses: ./.github/workflows/verify-env.yml #TODO output: if its PROD or DEV
-    secrets: inherit
 
 
   build-and-push-image:
     name: Build and push Docker image
     runs-on: ubuntu-latest
-    needs: [verify-env, load-config, verify-env]
     steps:
 
       - name: Checkout repository
@@ -80,7 +69,7 @@ jobs:
 
       #TODO: if PROD - registry is docker, if DEV - registry is docker-snapshots
       - name: Authenticate Docker client for PROD
-        if: ${{ needs.verify-env.outputs.environment == 'PROD' }}
+        if: ${{ inputs.environment == 'PROD' }}
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: https://scm.ecodex.eu/docker
@@ -88,7 +77,7 @@ jobs:
           password: ${{ steps.setup-jfrog-cli.outputs.oidc-token }}
 
       - name: Extract metadata (tags, labels) for Docker
-        if: ${{ needs.verify-env.outputs.environment == 'PROD' }}
+        if: ${{ inputs.environment == 'PROD' }}
         id: meta-PROD
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
@@ -102,7 +91,7 @@ jobs:
             type=edge,branch=develop
         
       - name: Authenticate Docker client for DEV
-        if: ${{ needs.verify-env.outputs.environment == 'DEV' }}
+        if: ${{ inputs.environment == 'DEV' }}
         uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: https://scm.ecodex.eu/ecodex-docker-snapshots
@@ -110,12 +99,12 @@ jobs:
           password: ${{ steps.setup-jfrog-cli.outputs.oidc-token }}
           
       - name: Extract metadata (tags, labels) for Docker in DEV
-        if: ${{ needs.verify-env.outputs.environment == 'DEV}}
+        if: ${{ inputs.environment == 'DEV' }}
         id: meta-DEV
         uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           context: git
-          images: https://scm.ecodex.eu/docker/${{ inputs.image-name }}
+          images: https://scm.ecodex.eu/ecodex-docker-snapshots/${{ inputs.image-name }}
           tags: |
             type=semver,pattern={{version}}
 
@@ -129,10 +118,19 @@ jobs:
           tags: ${{ steps.meta-DEV.outputs.tags || steps.meta-PROD.outputs.tags }}
           labels: ${{ steps.meta-DEV.outputs.labels || steps.meta-PROD.outputs.labels }}
 
-      - name: Generate artifact attestation
+      - name: Generate artifact attestation - prod
+        if: ${{ inputs.environment == 'PROD' }}
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
-          subject-name: ${{ inputs.registry }}/${{ inputs.image-name }}
+          subject-name: ecodex-docker/${{ inputs.image-name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate artifact attestation - dev
+        if: ${{ inputs.environment == 'DEV' }}
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-name: ecodex-docker-snapshots/${{ inputs.image-name }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
     
