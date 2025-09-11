@@ -33,7 +33,7 @@ jobs:
   build-and-push-image-npm:
     needs: mvn-npm-check
     if: ${{ needs.mvn-npm-check.outputs.project_type == 'npm' }}
-    uses: ./.github/workflows/docker-build/docker-build-push-npm.yml
+    uses: ./.github/workflows/docker-build-push-npm.yml
     with:
       image-name: ${{ inputs.image-name }}
       tag: ${{ inputs.tag }}
@@ -41,7 +41,7 @@ jobs:
   build-and-push-image-mvn:
     needs: mvn-npm-check
     if: ${{ needs.mvn-npm-check.outputs.project_type == 'maven' }}
-    uses: ./.github/workflows/docker-build/docker-build-push-mvn.yml
+    uses: ./.github/workflows/docker-build-push-mvn.yml
     with:
       image-name: ${{ inputs.image-name }}
       tag: ${{ inputs.tag }}
