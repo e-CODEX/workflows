@@ -133,13 +133,12 @@ jobs:
 
   docker-build-push:
     if: ${{ inputs.run_docker == 'true' }} 
-    needs: [test, load-config]
+    needs: [load-config]
     uses: ./.github/workflows/docker-build-push.yaml
     with:
       image-name: ${{ fromJson(needs.load-config.outputs.dockerImage) }}
       tag: ${{ github.sha }}
-      environment: development
-      registry: your-registry-url
+
 
   maven-publish-snapshot:
     if: ${{ inputs.run_maven_publish == 'true' }}
