@@ -31,7 +31,7 @@ jobs:
       pull-requests: write # required for updating PR comments
     strategy:
       matrix:
-        os: [windows-latest, macos-14, macos-13, ubuntu-latest] # Macos 13 is x86-64 and 14 is aarch64
+        os: [windows-latest, macos-14, ubuntu-latest] # Macos 13 is x86-64 and 14 is aarch64
         java-version: [21]
     runs-on: ${{ matrix.os }}
     steps:
@@ -84,4 +84,3 @@ jobs:
         with:
           name: artifact-snaphot
           path: ${{ inputs.artifact-path }}
-       
