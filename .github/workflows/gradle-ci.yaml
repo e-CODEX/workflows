@@ -54,22 +54,12 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Run tests with Gradle
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            gradlew.bat test ${{ inputs.gradle-parameters }}
-          else
-            ./gradlew test ${{ inputs.gradle-parameters }}
-          fi
+        run: ./gradlew test ${{ inputs.gradle-parameters }}
         shell: bash
 
       - name: Generate code coverage (optional)
         if: ${{ inputs.coverage-enabled }}
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            gradlew.bat jacocoTestReport ${{ inputs.gradle-parameters }}
-          else
-            ./gradlew jacocoTestReport ${{ inputs.gradle-parameters }}
-          fi
+        run: ./gradlew jacocoTestReport ${{ inputs.gradle-parameters }}
         shell: bash
 
       - name: Upload coverage report
@@ -101,12 +91,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build with Gradle
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            gradlew.bat clean build ${{ inputs.gradle-parameters }}
-          else
-            ./gradlew clean build ${{ inputs.gradle-parameters }}
-          fi
+        run: ./gradlew clean build ${{ inputs.gradle-parameters }}
         shell: bash
 
       - name: Verify SBOM exists
