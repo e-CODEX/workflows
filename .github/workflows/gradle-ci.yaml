@@ -42,7 +42,7 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java-version }}
-          cache: maven
+          cache: gradle
 
       - name: Make Gradle wrapper executable
         if: runner.os != 'Windows'
