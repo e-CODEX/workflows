@@ -4,7 +4,7 @@ on:
     inputs:
       java-version:
         description: "Java version to use for the build. (Tests are run on the latest LTS version)"
-        type: string
+        type: number
         required: false
         default: 21
       gradle-parameters:
