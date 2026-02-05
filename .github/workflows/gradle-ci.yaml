@@ -68,7 +68,7 @@ jobs:
         shell: bash
 
       - name: Generate JaCoCo Badge
-        if: ${{ inputs.coverage-enabled }}
+        if: ${{ inputs.coverage-enabled && runner.os == 'Linux' }}
         uses: cicirello/jacoco-badge-generator@72266185b7ee48a6fd74eaf0238395cc8b14fef8
         with:
           generate-branches-badge: true
