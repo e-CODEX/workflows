@@ -21,6 +21,11 @@ on:
         type: boolean
         required: false
         default: true
+      coverage-path:
+        description: "Generated coverage folder path"
+        type: string
+        required: false
+        default: "build/reports/jacoco/jacocoRootReport"
 permissions:
   contents: read
 
@@ -57,17 +62,24 @@ jobs:
         run: ./gradlew test ${{ inputs.gradle-parameters }}
         shell: bash
 
-      - name: Generate code coverage (optional)
+      - name: Generate JaCoCo code coverage
         if: ${{ inputs.coverage-enabled }}
-        run: ./gradlew jacocoTestReport ${{ inputs.gradle-parameters }}
+        run: ./gradlew jacocoRootReport
         shell: bash
+
+      - name: Generate JaCoCo Badge
+        if: ${{ inputs.coverage-enabled }}
+        uses: cicirello/jacoco-badge-generator@72266185b7ee48a6fd74eaf0238395cc8b14fef8
+        with:
+          generate-branches-badge: true
+          jacoco-csv-file: ${{ inputs.coverage-path }}/jacocoRootReport.csv
 
       - name: Upload coverage report
         if: ${{ inputs.coverage-enabled }}
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
-          path: build/reports/jacoco/test/html
+          path: ${{ inputs.coverage-path }}/html
 
   build:
     name: Build artifact and SBOM using Java ${{ inputs.java-version }}
