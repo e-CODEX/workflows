@@ -14,6 +14,11 @@
         "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-    <suppress files="*Test.java"
+    <!-- Suppress checks for test files -->
+    <suppress files=".*Test\.java$"
+              checks="LineLength|MissingJavadocMethod|MissingJavadocType"/>
+    <suppress files=".*Tests\.java$"
+              checks="LineLength|MissingJavadocMethod|MissingJavadocType"/>
+    <suppress files=".*[/\\]src[/\\]test[/\\].*\.java$"
               checks="LineLength|MissingJavadocMethod|MissingJavadocType"/>
 </suppressions>
