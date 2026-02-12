@@ -32,8 +32,7 @@
   </module>
   <!-- https://checkstyle.org/filters/suppressionfilter.html -->
   <module name="SuppressionFilter">
-    <property name="file" value="${org.checkstyle.google.suppressionfilter.config}"
-           default="checkstyle-suppressions.xml" />
+    <property name="file" value="checkstyle-suppressions.xml" />
     <property name="optional" value="true"/>
   </module>
 
@@ -47,11 +46,6 @@
     <property name="fileExtensions" value="java"/>
     <property name="max" value="100"/>
     <property name="ignorePattern" value="^package.*|^import.*|a href|href|http://|https://|ftp://"/>
-  </module>
-  <!-- Suppress specific checks for test files -->
-  <module name="SuppressionXpathSingleFilter">
-    <property name="checks" value="LineLength"/>
-    <property name="files" value=".*[/\\]src[/\\]test[/\\].*\.java$"/>
   </module>
 
   <module name="TreeWalker">
@@ -338,11 +332,6 @@
       <property name="tokens" value="METHOD_DEF, CTOR_DEF, ANNOTATION_FIELD_DEF,
                                    COMPACT_CTOR_DEF"/>
     </module>
-    <!-- Suppress specific checks for test files -->
-    <module name="SuppressionXpathSingleFilter">
-      <property name="checks" value="MissingJavadocMethod"/>
-      <property name="files" value=".*[/\\]src[/\\]test[/\\].*\.java$"/>
-    </module>
 
     <module name="MissingJavadocType">
       <property name="scope" value="protected"/>
@@ -350,11 +339,6 @@
                 value="CLASS_DEF, INTERFACE_DEF, ENUM_DEF,
                       RECORD_DEF, ANNOTATION_DEF"/>
       <property name="excludeScope" value="nothing"/>
-    </module>
-    <!-- Suppress specific checks for test files -->
-    <module name="SuppressionXpathSingleFilter">
-      <property name="checks" value="MissingJavadocType"/>
-      <property name="files" value=".*[/\\]src[/\\]test[/\\].*\.java$"/>
     </module>
 
     <module name="MethodName">
