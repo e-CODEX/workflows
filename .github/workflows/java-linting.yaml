@@ -16,4 +16,3 @@ jobs:
           reporter: github-pr-review
           level: warning
           checkstyle_config: workflows/checkstyle.xml
-          workdir: .

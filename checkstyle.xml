@@ -32,7 +32,7 @@
   </module>
   <!-- https://checkstyle.org/filters/suppressionfilter.html -->
   <module name="SuppressionFilter">
-    <property name="file" value="checkstyle-suppressions.xml" />
+    <property name="file" value="workflows/checkstyle-suppressions.xml" />
   </module>
 
   <!-- Checks for whitespace                               -->
