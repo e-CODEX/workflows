@@ -41,8 +41,8 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: ${{ inputs.java-version }}
-          cache: ${{ inputs.build-tool }}
-
+          cache: ${{ inputs.build-tool }}   
+    
       - name: Cache SonarCloud packages
         uses: actions/cache@v4
         with:
@@ -54,21 +54,18 @@ jobs:
         if: ${{ inputs.build-tool == 'maven' }}
         env:
             JACOCO_REPORT_PATH: ${{ inputs.jacoco-xml-report-path }}
+            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
         run: |
           mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
           -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
           -Dsonar.organization=e-codex \
           -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.java.binaries=target/classes \
           ${{ env.JACOCO_REPORT_PATH != '' && format('-Dsonar.coverage.jacoco.xmlReportPaths={0}', env.JACOCO_REPORT_PATH) || '' }}
           
        
       - name: Run SonarCloud analysis (Gradle)
         if: ${{ inputs.build-tool == 'gradle' }}
-        run: |
-          ./gradlew sonarqube \
-          -Dsonar.organization=e-codex \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.java.binaries=build/classes/java/main \
-          -Dsonar.coverage.jacoco.xmlReportPaths=${{ inputs.jacoco-xml-report-path }} \
-          -Dsonar.token=${{ secrets.SONAR_TOKEN }}    
+        env:
+         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew build sonar --info 
