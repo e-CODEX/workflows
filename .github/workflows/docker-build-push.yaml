@@ -59,7 +59,7 @@ jobs:
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
               
       - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
+        uses: jfrog/setup-jfrog-cli@1641575d87647fb969c0545f0b6a76873e328b7c # v5.0.0
         id: setup-jfrog-cli
         env:
             JF_URL: https://scm.ecodex.eu
