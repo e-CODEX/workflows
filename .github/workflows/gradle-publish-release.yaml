@@ -71,7 +71,6 @@ jobs:
                 uses: mikepenz/gradle-dependency-submission@v1
 
             -   name: Publish Release
-                if: ${{ steps.check-version.outputs.snapshot == 'true' }}
                 env:
                     MAVEN_REPO_ID: ${{ inputs.maven-repo-id }}
                     MAVEN_REPO_USERNAME: ${{ steps.setup-jfrog-cli.outputs.oidc-user }}
