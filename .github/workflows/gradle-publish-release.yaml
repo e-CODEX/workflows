@@ -57,7 +57,7 @@ jobs:
                     java-version: ${{ inputs.java-version }}
 
             -   name: Setup Gradle
-                uses: gradle/actions/setup-gradle@v4
+                uses: gradle/actions/setup-gradle@06832c7b30a0129d7fb559bcc6e43d26f6374244 # v4.3.1
 
             -   name: Setup JFrog CLI
                 uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
