@@ -1,0 +1,79 @@
+name: "Publish Release to Maven Repository"
+on:
+    workflow_call:
+        inputs:
+            java-version:
+                description: "Java version to use for the build."
+                required: true
+                type: number
+                default: 21
+            gradle-parameters:
+                description: "Extra parameters to pass to Gradle"
+                required: false
+                type: string
+                default: ""
+            maven-repo-id:
+                description: "Maven repository ID"
+                required: true
+                type: string
+            tag:
+                description: 'The tag to checkout (optional)'
+                required: false
+                type: string
+            environment:
+                description: "Deployment environment"
+                required: false
+                type: string
+                default: "production"
+permissions:
+    contents: read
+jobs:
+    publish-snapshot:
+        name: Publish Release to Maven Repository
+        permissions:
+            contents: write
+            attestations: write
+            id-token: write
+        runs-on: ubuntu-latest
+        environment: ${{ inputs.environment }}
+        steps:
+            -   name: Checkout repository
+                if: ${{ !inputs.tag }}
+                uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+            -   name: Install Graphviz
+                uses: e-CODEX/workflows/.github/actions/install-graphviz@main
+
+            -   name: Checkout tag
+                if: ${{ inputs.tag }}
+                uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+                with:
+                    ref: ${{ inputs.tag }}
+
+            -   name: Setup Java
+                uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+                with:
+                    distribution: 'temurin'
+                    java-version: ${{ inputs.java-version }}
+
+            -   name: Setup Gradle
+                uses: gradle/actions/setup-gradle@v4
+
+            -   name: Setup JFrog CLI
+                uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
+                id: setup-jfrog-cli
+                env:
+                    JF_URL: https://scm.ecodex.eu
+                with:
+                    oidc-provider-name: setup-jfrog
+
+            -   name: Submit Dependency Release to GitHub Advanced Security
+                uses: mikepenz/gradle-dependency-submission@v1
+
+            -   name: Publish Release
+                if: ${{ steps.check-version.outputs.snapshot == 'true' }}
+                env:
+                    MAVEN_REPO_ID: ${{ inputs.maven-repo-id }}
+                    MAVEN_REPO_USERNAME: ${{ steps.setup-jfrog-cli.outputs.oidc-user }}
+                    MAVEN_REPO_PASSWORD: ${{ steps.setup-jfrog-cli.outputs.oidc-token }}
+                run: ./gradlew publish ${{ inputs.gradle-parameters }}
