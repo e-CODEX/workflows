@@ -28,7 +28,7 @@ on:
 permissions:
     contents: read
 jobs:
-    publish-snapshot:
+    publish:
         name: Publish Release to Maven Repository
         permissions:
             contents: write
