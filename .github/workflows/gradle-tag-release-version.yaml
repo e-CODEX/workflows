@@ -1,0 +1,50 @@
+name: "Tag Release Version"
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: false
+        type: string
+        default: "production"
+    outputs:
+      tag:
+        description: 'The tag created for the release version'
+        value: ${{ jobs.tag-version.outputs.tag }}
+permissions:
+  contents: read
+jobs:
+  tag-version:
+    permissions:
+      contents: write  # for Git to git push
+    name: "Tag Release Version"
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Create Git tag
+        id: set_tag
+        run: |
+          # Use Gradle to extract the version from the root build.gradle.kts
+          VERSION=$(./gradlew properties -q | grep "^version:" | awk '{print $2}')
+          if [ -z "$VERSION" ]; then
+              echo "Version not found in build.gradle.kts"
+              exit 1
+          fi
+          git tag "$VERSION"
+          git push origin "$VERSION"
+          echo "Created tag: $VERSION"
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
