@@ -1,0 +1,58 @@
+name: "Check Gradle Release"
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  check-version:
+    name: "Check Gradle Release"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: "21"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Check version against SNAPSHOT
+        id: check-snapshot
+        run: |
+          # Use Gradle's `properties` task to extract the project version
+          VERSION=$(./gradlew properties -q | grep "^version:" | awk '{print $2}')
+
+          if [ -z "$VERSION" ]; then
+              echo "Error: Could not determine project version."
+              exit 1
+          fi
+
+          # Check if the version is a snapshot
+          if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
+              echo "Error: Version $VERSION is a SNAPSHOT version. Please use a final version."
+              exit 1
+          else
+              echo "Version $VERSION is a final version."
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if the tag already exists
+        id: check-tag
+        env:
+          VERSION: ${{ steps.check-snapshot.outputs.version }}
+        run: |
+          # Fetch all tags from the remote repository
+          git fetch --tags
+          # Check if a tag with the current version already exists
+          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
+              echo "Error: Tag $VERSION already exists. Please use a different version."
+              exit 1
+          else
+              echo "Tag $VERSION does not exist. Proceeding with the workflow."
+          fi
