@@ -15,7 +15,7 @@ jobs:
           path: 'workflows'
           ref: 'main'
 
-      - uses: dbelyaev/action-checkstyle@7a9906ab9abe184803bfdcb1753fa15b3875f67c # v1.17.2
+      - uses: dbelyaev/action-checkstyle@ada3d54c61a086e8d8348886a212c4a2a9411e3c # v1.17.2
         with:
           reporter: github-pr-review
           level: warning
