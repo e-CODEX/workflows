@@ -1,0 +1,55 @@
+name: "Check npm Release"
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node.js version to use"
+        required: false
+        type: string
+        default: "22"
+permissions:
+  contents: read
+jobs:
+  check-version:
+    name: "Check npm Release"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Check version against pre-release/dev tags
+        id: check-snapshot
+        run: |
+          # Extract the project version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+          if [ -z "$VERSION" ]; then
+              echo "Error: Could not determine project version."
+              exit 1
+          fi
+          # Check if the version looks like a pre-release (e.g. -SNAPSHOT, -beta, -rc, -dev)
+          if [[ "$VERSION" == *"-"* ]]; then
+              echo "Error: Version $VERSION is a pre-release version. Please use a final version."
+              exit 1
+          else
+              echo "Version $VERSION is a final version."
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Check if the tag already exists
+        id: check-tag
+        env:
+          VERSION: ${{ steps.check-snapshot.outputs.version }}
+        run: |
+          # Fetch all tags from the remote repository
+          git fetch --tags
+          # Check if a tag with the current version already exists
+          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
+              echo "Error: Tag $VERSION already exists. Please use a different version."
+              exit 1
+          else
+              echo "Tag $VERSION does not exist. Proceeding with the workflow."
+          fi
