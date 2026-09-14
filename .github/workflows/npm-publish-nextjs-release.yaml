@@ -9,9 +9,8 @@ on:
         default: 22
       app-folder:
         description: "Path to the Next.js app root within the repository."
-        required: false
+        required: true
         type: string
-        default: "connector-testor"
       tag:
         description: "The tag to checkout and release."
         required: true
