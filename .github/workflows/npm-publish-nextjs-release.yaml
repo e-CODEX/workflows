@@ -1,0 +1,76 @@
+name: "Publish NextJS App Release"
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: "Node.js version to use for the build."
+        required: true
+        type: number
+        default: 22
+      app-folder:
+        description: "Path to the Next.js app root within the repository."
+        required: false
+        type: string
+        default: "connector-testor"
+      tag:
+        description: "The tag to checkout and release."
+        required: true
+        type: string
+      environment:
+        description: "Deployment environment"
+        required: false
+        type: string
+        default: "production"
+permissions:
+  contents: read
+jobs:
+  publish:
+    name: Publish NextJS App Release
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.app-folder }}
+    steps:
+      -   name: Checkout tag
+          uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+          with:
+            ref: ${{ inputs.tag }}
+      -   name: Setup Node.js
+          uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a1 # v4.1.0
+          with:
+            node-version: ${{ inputs.node-version }}
+            cache: "npm"
+            cache-dependency-path: ${{ inputs.app-folder }}/package-lock.json
+      -   name: Install dependencies
+          run: npm ci
+      -   name: Lint
+          run: npm run lint
+      -   name: Type check
+          run: npm run typecheck --if-present
+      -   name: Run tests
+          run: npm test --if-present
+      -   name: Build
+          run: npm run build
+        # Requires `output: "standalone"` in next.config.js/ts
+      -   name: Assemble standalone bundle
+          run: |
+            mkdir -p release/standalone
+            cp -r .next/standalone/. release/standalone/
+            mkdir -p release/standalone/.next
+            cp -r .next/static release/standalone/.next/static
+            if [ -d public ]; then
+              cp -r public release/standalone/public
+            fi
+      -   name: Zip standalone bundle
+          run: |
+            cd release/standalone
+            zip -r "../../${{ inputs.app-folder }}-${{ inputs.tag }}.zip" .
+      -   name: Publish Release
+          uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+          with:
+            tag_name: ${{ inputs.tag }}
+            generate_release_notes: false
+            files: ${{ inputs.app-folder }}/${{ inputs.app-folder }}-${{ inputs.tag }}.zip
