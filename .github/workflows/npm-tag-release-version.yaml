@@ -1,0 +1,49 @@
+name: "Tag Release Version"
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: false
+        type: string
+        default: "production"
+      node-version:
+        description: "Node.js version to use"
+        required: false
+        type: string
+        default: "22"
+    outputs:
+      tag:
+        description: 'The tag created for the release version'
+        value: ${{ jobs.tag-version.outputs.tag }}
+permissions:
+  contents: read
+jobs:
+  tag-version:
+    permissions:
+      contents: write  # for Git to git push
+    name: "Tag Release Version"
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ inputs.node-version }}
+      - name: Create Git tag
+        id: set_tag
+        run: |
+          # Use Node to extract the version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+          if [ -z "$VERSION" ]; then
+              echo "Version not found in package.json"
+              exit 1
+          fi
+          git tag "$VERSION"
+          git push origin "$VERSION"
+          echo "Created tag: $VERSION"
+          echo "tag=$VERSION" >> $GITHUB_OUTPUT
