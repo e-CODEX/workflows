@@ -20,6 +20,12 @@ on:
         required: false
         type: string
         default: "production"
+      docs-artifact-name:
+        description: "Optional. Name of a workflow artifact (produced by an earlier job of the caller) containing the documentation PDF to include in the bundle under docs/."
+        required: false
+        type: string
+        default: ""
+
 permissions:
   contents: read
 jobs:
@@ -53,7 +59,7 @@ jobs:
           run: npm test --if-present
       -   name: Build
           run: npm run build
-        # Requires `output: "standalone"` in next.config.js/ts
+      # Requires `output: "standalone"` in next.config.js/ts
       -   name: Assemble standalone bundle
           run: |
             mkdir -p release/standalone
@@ -63,10 +69,26 @@ jobs:
             if [ -d public ]; then
               cp -r public release/standalone/public
             fi
-      -   name: Zip standalone bundle
+      -   name: Download documentation
+          if: ${{ inputs.docs-artifact-name != '' }}
+          uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+          with:
+            name: ${{ inputs.docs-artifact-name }}
+            path: ${{ github.workspace }}/pdf-out
+      -   name: Add documentation to the bundle
+          if: ${{ inputs.docs-artifact-name != '' }}
           run: |
-            cd release/standalone
-            zip -r "../../${{ inputs.app-folder }}-${{ inputs.tag }}.zip" .
+            mkdir -p release/docs
+            cp "$GITHUB_WORKSPACE"/pdf-out/*.pdf release/docs/
+            ls -l release/docs
+
+      -   name: Zip standalone bundle
+          env:
+            APP_FOLDER: ${{ inputs.app-folder }}
+            TAG: ${{ inputs.tag }}
+          run: |
+            cd release
+              zip -r "../${APP_FOLDER}-${TAG}.zip" .
       -   name: Publish Release
           uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
           with:
