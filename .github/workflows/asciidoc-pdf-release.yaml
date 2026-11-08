@@ -2,12 +2,12 @@ name: "Publish AsciiDoc PDF Release"
 on:
     workflow_call:
         inputs:
-            adoc-file:
-                description: "Path to the AsciiDoc file, relative to the repository root."
+            adoc-files:
+                description: "AsciiDoc files to render as PDF, one path per line, relative to the repository root."
                 required: true
                 type: string
             tag:
-                description: "The tag to checkout. Also used as the document version (project-version attribute) and in the PDF file name."
+                description: "The tag to checkout. Also used as the document version (project-version attribute) and in the PDF file names."
                 required: true
                 type: string
             asciidoctor-image:
@@ -21,69 +21,62 @@ on:
                 type: string
                 default: "ERROR"
             artifact-name:
-                description: "Name of the workflow artifact that will hold the PDF (downloaded by later jobs)."
+                description: "Name of the workflow artifact that will hold all generated PDFs (downloaded by later jobs)."
                 required: false
                 type: string
-                default: "installation-guide-pdf"
+                default: "documentation-pdf"
         outputs:
             artifact-name:
-                description: "Name of the artifact containing the generated PDF."
+                description: "Name of the artifact containing the generated PDFs."
                 value: ${{ inputs.artifact-name }}
-            pdf-name:
-                description: "File name of the generated PDF."
-                value: ${{ jobs.pdf.outputs.pdf-name }}
+
 permissions:
     contents: read
 jobs:
     pdf:
-        name: Generate the PDF
+        name: Generate the PDFs
         runs-on: ubuntu-latest
-        outputs:
-            pdf-name: ${{ steps.names.outputs.pdf-name }}
         steps:
-            - name: Validate release tag input
-              id: validate
-              env:
-                TAG: ${{ inputs.tag }}
-              run: |
-                  if ! [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+){1,2}([.-][0-9A-Za-z]+)*$ ]]; then
-                    echo "Invalid tag format: '$TAG'. Expected a release tag like v1.2.3" >&2
-                    exit 1
-                  fi
-                  echo "safe-tag=$TAG" >> "$GITHUB_OUTPUT"
+            -   name: Validate release tag input
+                id: validate
+                env:
+                    TAG: ${{ inputs.tag }}
+                run: |
+                    if ! [[ "$TAG" =~ ^v[0-9]+(\.[0-9]+){1,2}([.-][0-9A-Za-z]+)*$ ]]; then
+                      echo "Invalid tag format: '$TAG'. Expected a release tag like v1.2.3" >&2
+                      exit 1
+                    fi
+                    echo "safe-tag=$TAG" >> "$GITHUB_OUTPUT"
             -   name: Checkout tag
                 uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
                 with:
                     ref: ${{ steps.validate.outputs.safe-tag }}
-            -   name: Compute output name
-                id: names
-                env:
-                    ADOC_FILE: ${{ inputs.adoc-file }}
-                    TAG: ${{ steps.validate.outputs.safe-tag }}
-                run: |
-                    base="$(basename "$ADOC_FILE" .adoc)"
-                    echo "pdf-name=${base}-${TAG}.pdf" >> "$GITHUB_OUTPUT"
-            -   name: Build PDF
+            -   name: Build PDFs
+                  # Each file is rendered as <file-name>-<tag>.pdf in ./out.
                 # The tag is passed as the `project-version` attribute (shown on the title page).
                 env:
-                    ADOC_FILE: ${{ inputs.adoc-file }}
-                    TAG: ${{ inputs.tag }}
+                    ADOC_FILES: ${{ inputs.adoc-files }}
+                    TAG: ${{ steps.validate.outputs.safe-tag }}
                     IMAGE: ${{ inputs.asciidoctor-image }}
                     FAILURE_LEVEL: ${{ inputs.failure-level }}
-                    PDF_NAME: ${{ steps.names.outputs.pdf-name }}
                 run: |
-                    docker run --rm -v "$PWD":/documents "$IMAGE" \
-                      asciidoctor-pdf \
-                      --failure-level="$FAILURE_LEVEL" \
-                      -a project-version="$TAG" \
-                      -D out \
-                      -o "$PDF_NAME" \
-                      "$ADOC_FILE"
-                    ls -l "out/$PDF_NAME"
-            -   name: Upload PDF as workflow artifact
+                    while IFS= read -r file; do
+                      [ -z "$file" ] && continue
+                      base="$(basename "$file" .adoc)"
+                      docker run --rm -v "$PWD":/documents "$IMAGE" \
+                        asciidoctor-pdf \
+                        --failure-level="$FAILURE_LEVEL" \
+                        -a project-version="$TAG" \
+                        -D out \
+                        -o "${base}-${TAG}.pdf" \
+                        "$file"
+                    done <<< "$ADOC_FILES"
+                    ls -l out
+            -   name: Upload PDFs as workflow artifact
+                # Later jobs (e.g. the NextJS publish workflow) download them with the same artifact name.
                 uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
                 with:
                     name: ${{ inputs.artifact-name }}
-                    path: out/${{ steps.names.outputs.pdf-name }}
+                    path: out
                     if-no-files-found: error
                     retention-days: 7
