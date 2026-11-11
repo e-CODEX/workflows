@@ -20,6 +20,11 @@ on:
                 required: false
                 type: string
                 default: "ERROR"
+            adoc-attributes:
+                description: "Optional extra AsciiDoc attributes passed with -a to every file, one name=value per line (for example connector-version=7.1.0)."
+                required: false
+                type: string
+                default: ""
             artifact-name:
                 description: "Name of the workflow artifact that will hold all generated PDFs (downloaded by later jobs)."
                 required: false
@@ -56,16 +61,23 @@ jobs:
                 # The tag is passed as the `project-version` attribute (shown on the title page).
                 env:
                     ADOC_FILES: ${{ inputs.adoc-files }}
+                    ADOC_ATTRIBUTES: ${{ inputs.adoc-attributes }}
                     TAG: ${{ steps.validate.outputs.safe-tag }}
                     IMAGE: ${{ inputs.asciidoctor-image }}
                     FAILURE_LEVEL: ${{ inputs.failure-level }}
                 run: |
+                    attr_args=()
+                    while IFS= read -r attr; do
+                      [ -z "$attr" ] && continue
+                      attr_args+=(-a "$attr")
+                    done <<< "$ADOC_ATTRIBUTES"
                     while IFS= read -r file; do
                       [ -z "$file" ] && continue
                       base="$(basename "$file" .adoc)"
                       docker run --rm -v "$PWD":/documents "$IMAGE" \
                         asciidoctor-pdf \
                         --failure-level="$FAILURE_LEVEL" \
+                        "${attr_args[@]}" \
                         -a project-version="$TAG" \
                         -D out \
                         -o "${base}-${TAG}.pdf" \
