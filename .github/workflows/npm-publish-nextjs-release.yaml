@@ -1,96 +1,113 @@
 name: "Publish NextJS App Release"
 on:
-  workflow_call:
-    inputs:
-      node-version:
-        description: "Node.js version to use for the build."
-        required: true
-        type: string
-      app-folder:
-        description: "Path to the Next.js app root within the repository."
-        required: true
-        type: string
-      tag:
-        description: "The tag to checkout and release."
-        required: true
-        type: string
-      environment:
-        description: "Deployment environment"
-        required: false
-        type: string
-        default: "production"
-      docs-artifact-name:
-        description: "Optional. Name of a workflow artifact (produced by an earlier job of the caller) containing the documentation PDF to include in the bundle under docs/."
-        required: false
-        type: string
-        default: ""
+    workflow_call:
+        inputs:
+            node-version:
+                description: "Node.js version to use for the build."
+                required: true
+                type: string
+            app-folder:
+                description: "Path to the Next.js app root within the repository. Use '.' when the app is at the repository root."
+                required: true
+                type: string
+            bundle-name:
+                description: "Base name of the released zip (<bundle-name>-<tag>.zip). Defaults to app-folder; set it when app-folder is '.'."
+                required: false
+                type: string
+                default: ""
+            tag:
+                description: "The tag to checkout and release."
+                required: true
+                type: string
+            environment:
+                description: "Deployment environment"
+                required: false
+                type: string
+                default: "production"
+            docs-artifact-name:
+                description: "Optional. Name of a workflow artifact (produced by an earlier job of the caller) containing the documentation PDF to include in the bundle under docs/."
+                required: false
+                type: string
+                default: ""
 
 permissions:
-  contents: read
+    contents: read
 jobs:
-  publish:
-    name: Publish NextJS App Release
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    defaults:
-      run:
-        working-directory: ${{ inputs.app-folder }}
-    steps:
-      -   name: Checkout tag
-          uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-          with:
-            ref: ${{ inputs.tag }}
-      -   name: Setup Node.js
-          uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-          with:
-            node-version: ${{ inputs.node-version }}
-            cache: "npm"
-            cache-dependency-path: ${{ inputs.app-folder }}/package-lock.json
-      -   name: Install dependencies
-          run: npm ci
-      -   name: Lint
-          run: npm run lint
-      -   name: Type check
-          run: npm run typecheck --if-present
-      -   name: Run tests
-          run: npm test --if-present
-      -   name: Build
-          run: npm run build
-      # Requires `output: "standalone"` in next.config.js/ts
-      -   name: Assemble standalone bundle
-          run: |
-            mkdir -p release/standalone
-            cp -r .next/standalone/. release/standalone/
-            mkdir -p release/standalone/.next
-            cp -r .next/static release/standalone/.next/static
-            if [ -d public ]; then
-              cp -r public release/standalone/public
-            fi
-      -   name: Download documentation
-          if: ${{ inputs.docs-artifact-name != '' }}
-          uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-          with:
-            name: ${{ inputs.docs-artifact-name }}
-            path: ${{ github.workspace }}/pdf-out
-      -   name: Add documentation to the bundle
-          if: ${{ inputs.docs-artifact-name != '' }}
-          run: |
-            mkdir -p release/docs
-            cp "$GITHUB_WORKSPACE"/pdf-out/*.pdf release/docs/
-            ls -l release/docs
-
-      -   name: Zip standalone bundle
-          env:
-            APP_FOLDER: ${{ inputs.app-folder }}
-            TAG: ${{ inputs.tag }}
-          run: |
-            cd release
-              zip -r "../${APP_FOLDER}-${TAG}.zip" .
-      -   name: Publish Release
-          uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
-          with:
-            tag_name: ${{ inputs.tag }}
-            generate_release_notes: false
-            files: ${{ inputs.app-folder }}/${{ inputs.app-folder }}-${{ inputs.tag }}.zip
+    publish:
+        name: Publish NextJS App Release
+        permissions:
+            contents: write
+        runs-on: ubuntu-latest
+        environment: ${{ inputs.environment }}
+        defaults:
+            run:
+                working-directory: ${{ inputs.app-folder }}
+        steps:
+            -   name: Checkout tag
+                uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+                with:
+                    ref: ${{ inputs.tag }}
+            -   name: Check app folder
+                # Fails early with a clear message when the folder or its lock file is missing at this tag.
+                working-directory: ${{ github.workspace }}
+                env:
+                    APP_FOLDER: ${{ inputs.app-folder }}
+                    TAG: ${{ inputs.tag }}
+                run: |
+                    if [ ! -f "$APP_FOLDER/package-lock.json" ]; then
+                      echo "No package-lock.json found in '$APP_FOLDER' at tag '$TAG'." >&2
+                      echo "Content of the repository root at this tag:" >&2
+                      ls -la >&2
+                      exit 1
+                    fi
+            -   name: Setup Node.js
+                uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+                with:
+                    node-version: ${{ inputs.node-version }}
+                    cache: "npm"
+                    cache-dependency-path: ${{ inputs.app-folder }}/package-lock.json
+            -   name: Install dependencies
+                run: npm ci
+            -   name: Lint
+                run: npm run lint
+            -   name: Type check
+                run: npm run typecheck --if-present
+            -   name: Run tests
+                run: npm test --if-present
+            -   name: Build
+                run: npm run build
+            # Requires `output: "standalone"` in next.config.js/ts
+            -   name: Assemble standalone bundle
+                run: |
+                    mkdir -p release/standalone
+                    cp -r .next/standalone/. release/standalone/
+                    mkdir -p release/standalone/.next
+                    cp -r .next/static release/standalone/.next/static
+                    if [ -d public ]; then
+                      cp -r public release/standalone/public
+                    fi
+            -   name: Download documentation
+                if: ${{ inputs.docs-artifact-name != '' }}
+                uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+                with:
+                    name: ${{ inputs.docs-artifact-name }}
+                    path: ${{ github.workspace }}/pdf-out
+            -   name: Add documentation to the bundle
+                if: ${{ inputs.docs-artifact-name != '' }}
+                run: |
+                    mkdir -p release/docs
+                    cp "$GITHUB_WORKSPACE"/pdf-out/*.pdf release/docs/
+                    ls -l release/docs
+            -   name: Zip bundle
+                env:
+                    BUNDLE_NAME: ${{ inputs.bundle-name || inputs.app-folder }}
+                    TAG: ${{ inputs.tag }}
+                run: |
+                    cd release
+                    zip -r "../${BUNDLE_NAME}-${TAG}.zip" .
+            -   name: Publish Release
+                uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
+                with:
+                    tag_name: ${{ inputs.tag }}
+                    generate_release_notes: false
+                    files: ${{ inputs.app-folder }}/${{ inputs.bundle-name || inputs.app-folder }}-${{ inputs.tag }}.zip
