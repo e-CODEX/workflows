@@ -5,8 +5,7 @@ on:
       node-version:
         description: "Node.js version to use for the build."
         required: true
-        type: number
-        default: 22
+        type: string
       app-folder:
         description: "Path to the Next.js app root within the repository."
         required: true

@@ -9,9 +9,8 @@ on:
         default: "production"
       node-version:
         description: "Node.js version to use"
-        required: false
+        required: true
         type: string
-        default: "22"
     outputs:
       tag:
         description: 'The tag created for the release version'

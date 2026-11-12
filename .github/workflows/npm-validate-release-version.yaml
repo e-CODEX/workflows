@@ -4,9 +4,8 @@ on:
     inputs:
       node-version:
         description: "Node.js version to use"
-        required: false
+        required: true
         type: string
-        default: "22"
 permissions:
   contents: read
 jobs:
