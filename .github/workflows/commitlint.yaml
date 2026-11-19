@@ -37,4 +37,14 @@ jobs:
 
       - name: Validate PR commits with commitlint
         if: github.event_name == 'pull_request'
-        run: npx commitlint --from ${{ github.event.pull_request.head.sha }}~${{ github.event.pull_request.commits }} --to ${{ github.event.pull_request.head.sha }} --verbose
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_COMMITS: ${{ github.event.pull_request.commits }}
+        run: |
+          case "$PR_COMMITS" in
+            ''|*[!0-9]*)
+              echo "Invalid pull_request.commits value: $PR_COMMITS" >&2
+              exit 1
+              ;;
+          esac
+          npx commitlint --from "$HEAD_SHA~$PR_COMMITS" --to "$HEAD_SHA" --verbose
