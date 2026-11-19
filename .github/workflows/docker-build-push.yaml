@@ -1,22 +1,42 @@
 name: Create and publish Docker image
-# Create and publish a Docker image to the e-CODEX JFrog, following SemVer and GitFlow conventions
-# On pushes to develop, build and push a Docker image with the 'edge' label
-# On tag pushes to the main branch, build and push a Docker image with the 'latest' label, as well as the SemVer tags (e.g. '1.2.3', '1.2', '1')
-# On all pushes, build and push a Docker image with the short SHA checksum label
+# Builds a Docker image and publishes it to the e-CODEX JFrog Artifactory (scm.ecodex.eu).
 #
-# Authentication to the e-CODEX JFrog is done using the JFrog CLI, which is configured with an OIDC token, obtained from the GitHub Actions OIDC provider
-# Attestation of the Docker image is created and pushed to the e-CODEX JFrog as well as to the GitHub Attestations API
+# Tags (SemVer / GitFlow):
+#   - pushes to develop          -> 'edge' and 'sha-<short sha>'
+#   - releases ('tag' is given)  -> '1.2.3', '1.2', '1', 'latest' and 'sha-<short sha>'
+#   - refresh ('refresh: true')  -> '1.2.3' only, plus '1.2'/'1' with 'floating-tags' and 'latest' with 'latest'
+#
+# Refresh mode exists to fix image vulnerabilities (base image / OS packages) without releasing new software:
+# the released git tag is checked out, so the application is built from exactly the released source, but the
+# base images are pulled again and no layer cache is used, so every layer picks up the latest fixes. The new
+# image is pushed over the existing '1.2.3' tag. Floating tags are opt-in so that refreshing an old release
+# line never takes '1.2', '1' or 'latest' away from a newer release.
+#
+# Supply chain:
+#   - Authentication: GitHub OIDC token exchanged by the JFrog CLI for a short-lived JFrog token (no secrets).
+#   - Build-info: the image is recorded in the JFrog build-info '<repository>-docker', so Artifactory knows which
+#     workflow run, commit and environment produced it.
+#   - SBOM + provenance: BuildKit generates an SPDX SBOM and a SLSA provenance (mode=max) and pushes them inside
+#     the image index, next to the image, so any OCI tool can read them.
+#   - GitHub attestation (signed with Sigstore, stored in GitHub) in two forms, because one attestation cannot
+#     serve both consumers (actions/attest can only push to a registry with a plain image name, and JFrog only
+#     recognises an image subject written as 'oci://<image>'):
+#       1. pushed into the registry as an OCI referrer of the image -> verifiable with registry-only tools
+#          (cosign, oras, 'gh attestation verify --bundle-from-oci');
+#       2. subject 'oci://<image>' -> setup-jfrog-cli turns it into JFrog evidence on the image in Artifactory.
+#   - At the end of the job the setup-jfrog-cli post step publishes the build-info and creates the evidence.
+#     It tries every attestation of the job, so it logs one expected warning for attestation 1 (its plain
+#     image name is not an Artifactory path).
 
-on: 
+on:
   workflow_call:
     inputs:
       image-name:
         description: 'The name of the Docker image to build and push'
         required: true
-        default: ${{ github.repository }}
         type: string
       tag:
-        description: 'The tag to checkout (optional)'
+        description: 'The git tag to checkout and publish (optional for regular builds, required with refresh)'
         required: false
         type: string
       environment:
@@ -25,10 +45,25 @@ on:
         type: string
         default: "development"
       registry:
-        description: "Docker registry to push images to"
+        description: "Docker registry to push images to, as <host>/<artifactory-docker-repository>"
         required: false
         type: string
         default: "scm.ecodex.eu/docker"
+      refresh:
+        description: "Rebuild the released 'tag' with fresh base images and no cache, overwriting its image"
+        required: false
+        type: boolean
+        default: false
+      floating-tags:
+        description: "Refresh only: also move the '<major>.<minor>' and '<major>' tags (newest patch of a line only)"
+        required: false
+        type: boolean
+        default: false
+      latest:
+        description: "Refresh only: also move the 'latest' tag (newest release only)"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -37,69 +72,105 @@ jobs:
   build-and-push-image:
     name: Build and push Docker image
     runs-on: ubuntu-latest
+    # The environment holds the protection rules (approvals) and is part of the OIDC claims JFrog can check
     environment: ${{ inputs.environment }}
     permissions:
-      contents: read
-      attestations: write # Required for attestation
-      id-token: write # Required for JFrog CLI setup
-       
+      contents: read      # checkout
+      id-token: write     # GitHub OIDC token, used for the JFrog login and for signing the attestations (Sigstore)
+      attestations: write # store the attestations in GitHub
+    env:
+      # Build-info name in Artifactory. The '-docker' suffix keeps it apart from the Maven/Gradle build-info of the
+      # same workflow run (both would otherwise use the same name and run number and overwrite each other).
+      JFROG_CLI_BUILD_NAME: ${{ github.event.repository.name }}-docker
+
     steps:
-
+      # Regular builds use the triggering commit, releases and refreshes the released git tag.
       - name: Checkout repository
-        if: ${{ !inputs.tag }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Checkout tag
-        if: ${{ inputs.tag }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag }}
 
+      # Buildx (BuildKit) is needed to generate the SBOM and provenance attestations in the image.
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
-              
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # Installs a pinned JFrog CLI and logs in with GitHub OIDC (OIDC integration 'setup-jfrog' in JFrog).
+      # Its post step (end of job) publishes the build-info and creates JFrog evidence from the attestations.
       - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
+        uses: jfrog/setup-jfrog-cli@4c2f06da03095113100534a16d58d8a252680949 # v5.3.5
         id: setup-jfrog-cli
         env:
-            JF_URL: https://scm.ecodex.eu
+          JF_URL: https://scm.ecodex.eu
         with:
-            oidc-provider-name: setup-jfrog    
+          version: 2.133.0
+          oidc-provider-name: setup-jfrog
 
+      # Docker uses the short-lived token obtained by the JFrog CLI, so no registry password is stored.
       - name: Authenticate Docker client
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ${{ inputs.registry }}
           username: ${{ steps.setup-jfrog-cli.outputs.oidc-user }}
           password: ${{ steps.setup-jfrog-cli.outputs.oidc-token }}
 
+      # Computes the tags and OCI labels (source, revision, version, created...).
+      # Refresh mode only republishes '1.2.3' unless floating-tags / latest are requested, and never moves
+      # 'edge' or 'sha-*', which belong to develop builds.
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           context: git
           images: ${{ inputs.registry }}/${{ inputs.image-name }}
+          flavor: latest=${{ !inputs.refresh && 'auto' || inputs.latest }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha
-            type=edge,branch=develop
-      
+            type=semver,pattern={{version}},value=${{ inputs.tag }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag }},enable=${{ !inputs.refresh || inputs.floating-tags }}
+            type=semver,pattern={{major}},value=${{ inputs.tag }},enable=${{ !inputs.refresh || inputs.floating-tags }}
+            type=sha,enable=${{ !inputs.refresh }}
+            type=edge,branch=develop,enable=${{ !inputs.refresh }}
+
+      # pull: always use the newest base images (security fixes).
+      # no-cache: in refresh mode, rebuild every layer so OS package upgrades in the Dockerfile run again.
+      # sbom / provenance: BuildKit attestations stored in the image index.
       - name: Build and push Docker image
         id: push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
           push: true
+          pull: true
+          no-cache: ${{ inputs.refresh }}
           sbom: true
+          provenance: mode=max
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: Generate artifact attestation
+      # Records the pushed image (all tags and its digest) in the JFrog build-info. The build-push-action
+      # metadata output has the buildx '--metadata-file' format that 'jf rt build-docker-create' reads.
+      # The argument is the Artifactory Docker repository key: the part of 'registry' after the host.
+      - name: Add the image to the JFrog build-info
+        env:
+          METADATA: ${{ steps.push.outputs.metadata }}
+          REGISTRY: ${{ inputs.registry }}
+        run: |
+          echo "${METADATA}" > "${RUNNER_TEMP}/image-metadata.json"
+          jf rt build-docker-create "${REGISTRY#*/}" --image-file "${RUNNER_TEMP}/image-metadata.json"
+
+      # Attestation 1: pushed to the registry next to the image, for registry-only verification.
+      # Storage records (GitHub artifact metadata) are not used, so that permission is not needed.
+      - name: Attest the image (stored in the registry)
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ inputs.registry }}/${{ inputs.image-name }}
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
-    
+          create-storage-record: false
+
+      # Attestation 2: 'oci://' subject so the setup-jfrog-cli post step attaches it to the image in
+      # Artifactory as JFrog evidence.
+      - name: Attest the image (JFrog evidence)
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: oci://${{ inputs.registry }}/${{ inputs.image-name }}
+          subject-digest: ${{ steps.push.outputs.digest }}

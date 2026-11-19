@@ -1,4 +1,20 @@
 name: "Publish Release to Maven Repository"
+# Deploys a Maven release to the e-CODEX JFrog Artifactory (scm.ecodex.eu) with the JFrog CLI.
+#
+# What is done and why:
+#   - Authentication: GitHub OIDC token exchanged by the JFrog CLI for a short-lived JFrog token (no secrets,
+#     no credentials in settings.xml).
+#   - Deployment: 'jf mvn deploy' builds the project and deploys every module artifact to 'deploy-repo' through
+#     the JFrog Maven extractor (instead of maven-deploy-plugin), recording the artifacts and all resolved
+#     dependencies in the JFrog build-info '<repository>'. The build-info is what Artifactory (and Xray) use to
+#     know where an artifact comes from and what it contains.
+#   - SBOM: the cyclonedx-maven-plugin (bound to 'package' in the POM) generates the CycloneDX SBOMs and attaches
+#     them to the modules, so they are deployed with the artifacts (classifier 'cyclonedx').
+#   - Attestations: the distribution zip (the artifact users actually install) gets a SLSA build-provenance
+#     attestation and an SBOM attestation, signed with Sigstore and stored in GitHub. Their subject is the zip's
+#     path in Artifactory, so the setup-jfrog-cli post step can attach them to the zip as JFrog evidence.
+#   - End of job (setup-jfrog-cli post step): adds the git details, publishes the build-info and creates the
+#     JFrog evidence from the attestations.
 on:
   workflow_call:
     inputs:
@@ -13,9 +29,24 @@ on:
         type: string
         default: ""
       maven-repo-id:
-        description: "Maven repository ID"
+        description: "Deprecated and ignored: the JFrog CLI deploys to 'deploy-repo'"
+        required: false
+        type: string
+        default: ""
+      deploy-repo:
+        description: "Artifactory repository to deploy the release to"
+        required: false
+        type: string
+        default: "ecodex-releases"
+      distribution-path:
+        description: "Local path (glob) of the main artifact (distribution zip) to attest"
         required: true
         type: string
+      sbom-path:
+        description: "Path of the aggregated CycloneDX JSON SBOM"
+        required: false
+        type: string
+        default: "target/bom.json"
       tag:
         description: 'The tag to checkout (optional)'
         required: false
@@ -29,55 +60,85 @@ on:
 permissions:
   contents: read
 
-jobs:        
+jobs:
   publish-release:
     name: Publish Release to Maven Repository
     permissions:
-      contents: write
-      attestations: write # Required for attestation
-      id-token: write # Required for JFrog CLI setup
+      contents: write     # dependency submission to GitHub
+      id-token: write     # GitHub OIDC token, used for the JFrog login and for signing the attestations
+      attestations: write # store the attestations in GitHub
     runs-on: ubuntu-latest
+    # The environment holds the protection rules (approvals) and is part of the OIDC claims JFrog can check
     environment: ${{ inputs.environment }}
+    env:
+      # Build-info name in Artifactory (the default would be the caller's workflow name, shared between repos)
+      JFROG_CLI_BUILD_NAME: ${{ github.event.repository.name }}
     steps:
-
+      # Releases build the git tag created by the tag-release workflow
       - name: Checkout repository
-        if: ${{ !inputs.tag }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install Graphviz
-        uses: e-CODEX/workflows/.github/actions/install-graphviz@main
-        
-      - name: Checkout tag
-        if: ${{ inputs.tag }}
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.tag }}
 
+      # Needed by the documentation module (diagrams)
+      - name: Install Graphviz
+        uses: e-CODEX/workflows/.github/actions/install-graphviz@main
+
       - name: Setup Java
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: 'temurin'
           java-version: ${{ inputs.java-version }}
 
+      # Installs a pinned JFrog CLI and logs in with GitHub OIDC (OIDC integration 'setup-jfrog' in JFrog).
+      # Its post step publishes the build-info and creates the JFrog evidence at the end of the job.
       - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
-        id: setup-jfrog-cli
+        uses: jfrog/setup-jfrog-cli@4c2f06da03095113100534a16d58d8a252680949 # v5.3.5
         env:
-            JF_URL: https://scm.ecodex.eu
+          JF_URL: https://scm.ecodex.eu
         with:
-            oidc-provider-name: setup-jfrog   
+          version: 2.133.0
+          oidc-provider-name: setup-jfrog
 
-      - uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
-        with:
-          servers: |
-            [{
-              "id": "${{ inputs.maven-repo-id }}",
-              "username": "${{ steps.setup-jfrog-cli.outputs.oidc-user }}",
-              "password": "${{ steps.setup-jfrog-cli.outputs.oidc-token }}"
-            }]
-
+      # Dependency graph for Dependabot alerts / GitHub Advanced Security
       - name: Submit Dependency Release to GitHub Advanced Security
         uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
 
+      # mvn-config: deploy releases and snapshots to 'deploy-repo' (the JFrog CLI requires both to be set).
+      # Dependencies keep being resolved from the repositories declared in the POM.
       - name: Publish Release
-        run: mvn -B -e deploy -DrepositoryId=${{ inputs.maven-repo-id }} ${{ inputs.maven-parameters }}
+        env:
+          DEPLOY_REPO: ${{ inputs.deploy-repo }}
+          MAVEN_PARAMETERS: ${{ inputs.maven-parameters }}
+        run: |
+          jf mvn-config --repo-deploy-releases="${DEPLOY_REPO}" --repo-deploy-snapshots="${DEPLOY_REPO}"
+          jf mvn -B -e deploy ${MAVEN_PARAMETERS}
+
+      # The attestation subject must be the zip's path in Artifactory; Maven renames it on deployment
+      # (e.g. domibusConnector.zip -> domibusConnectorDistribution-<version>.zip), so it is looked up by sha256.
+      - name: Locate the distribution in Artifactory
+        id: distribution
+        env:
+          DISTRIBUTION: ${{ inputs.distribution-path }}
+        run: |
+          sha=$(sha256sum $(ls ${DISTRIBUTION}) | cut -d' ' -f1)
+          subject=$(jf rt curl -s -XPOST /api/search/aql -H "Content-Type: text/plain" \
+            -d "items.find({\"sha256\":\"${sha}\"}).include(\"repo\",\"path\",\"name\")" \
+            | jq -r '.results[0] // error("distribution not found in Artifactory") | "\(.repo)/\(.path)/\(.name)"')
+          echo "subject-name=${subject}" >> "${GITHUB_OUTPUT}"
+          echo "subject-digest=sha256:${sha}" >> "${GITHUB_OUTPUT}"
+
+      # SLSA build provenance: which workflow, commit and runner produced the zip
+      - name: Attest the distribution provenance
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.distribution.outputs.subject-name }}
+          subject-digest: ${{ steps.distribution.outputs.subject-digest }}
+
+      # Signed statement that the aggregated SBOM describes this zip
+      - name: Attest the distribution SBOM
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.distribution.outputs.subject-name }}
+          subject-digest: ${{ steps.distribution.outputs.subject-digest }}
+          sbom-path: ${{ inputs.sbom-path }}

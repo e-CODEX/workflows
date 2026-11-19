@@ -1,4 +1,15 @@
 name: "Publish Snapshot to Maven Repository"
+# Deploys a Maven -SNAPSHOT to the e-CODEX JFrog Artifactory (scm.ecodex.eu) with the JFrog CLI.
+# Runs on every push to develop. Does nothing when the project version is not a -SNAPSHOT (e.g. while a release is
+# being prepared), so a release version is never overwritten by a develop build.
+#
+# Same supply chain as maven-publish-release.yaml (see there for the details):
+#   - GitHub OIDC login, no secrets;
+#   - 'jf mvn deploy' deploys the modules (with their CycloneDX SBOMs) and records them in the build-info
+#     '<repository>-snapshot' (separate name so snapshots and releases have their own build history);
+#   - the distribution zip gets a provenance and an SBOM attestation (GitHub) that setup-jfrog-cli turns into
+#     JFrog evidence;
+#   - the setup-jfrog-cli post step publishes the build-info and the evidence at the end of the job.
 on:
   workflow_call:
     inputs:
@@ -10,71 +21,122 @@ on:
       maven-parameters:
         description: "Extra parameters to pass to Maven"
         required: false
-        type: string  
+        type: string
         default: ""
       maven-repo-id:
-        description: "Maven repository ID"
+        description: "Deprecated and ignored: the JFrog CLI deploys to 'deploy-repo'"
+        required: false
+        type: string
+        default: ""
+      deploy-repo:
+        description: "Artifactory repository to deploy the snapshot to"
+        required: false
+        type: string
+        default: "ecodex-snapshots"
+      distribution-path:
+        description: "Local path (glob) of the main artifact (distribution zip) to attest"
         required: true
         type: string
+      sbom-path:
+        description: "Path of the aggregated CycloneDX JSON SBOM"
+        required: false
+        type: string
+        default: "target/bom.json"
 
 permissions:
   contents: read
 
-jobs:        
+jobs:
   publish-snapshot:
     name: Publish Snapshot to Maven Repository
     permissions:
-      contents: write
-      attestations: write # Required for attestation
-      id-token: write # Required for JFrog CLI setup
+      contents: write     # dependency submission to GitHub
+      id-token: write     # GitHub OIDC token, used for the JFrog login and for signing the attestations
+      attestations: write # store the attestations in GitHub
     runs-on: ubuntu-latest
+    env:
+      # Build-info name in Artifactory, separate from the release builds
+      JFROG_CLI_BUILD_NAME: ${{ github.event.repository.name }}-snapshot
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Needed by the documentation module (diagrams)
       - name: Install Graphviz
         uses: e-CODEX/workflows/.github/actions/install-graphviz@main
 
       - name: Setup Java
-        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: 'temurin'
           java-version: ${{ inputs.java-version }}
 
-      - name: Setup JFrog CLI
-        uses: jfrog/setup-jfrog-cli@f748a0599171a192a2668afee8d0497f7c1069df # v4.5.6
-        id: setup-jfrog-cli
-        env:
-            JF_URL: https://scm.ecodex.eu
-        with:
-            oidc-provider-name: setup-jfrog   
-
-      - uses: s4u/maven-settings-action@894661b3ddae382f1ae8edbeab60987e08cf0788 # v4.0.0
-        with:
-          servers: |
-            [{
-              "id": "${{ inputs.maven-repo-id }}",
-              "username": "${{ steps.setup-jfrog-cli.outputs.oidc-user }}",
-              "password": "${{ steps.setup-jfrog-cli.outputs.oidc-token }}"
-            }]
-
-      - name: Submit Dependency Snapshot to GitHub Advanced Security
-        uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
-
+      # Only -SNAPSHOT versions are published from develop; all following JFrog steps depend on this
       - name: Check if version is Snapshot
         id: check-version
         run: |
-          # Use Maven to extract the version from the pom.xml file
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          # Check if the version is a snapshot
           if [[ "$VERSION" == *"-SNAPSHOT" ]]; then
-              echo "Version $VERSION is a SNAPSHOT version."
               echo "snapshot=true" >> "$GITHUB_OUTPUT"
           else
-              echo "Version $VERSION is a final version."
+              echo "Version $VERSION is not a SNAPSHOT, nothing to publish."
               echo "snapshot=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Installs a pinned JFrog CLI and logs in with GitHub OIDC (OIDC integration 'setup-jfrog' in JFrog).
+      # Its post step publishes the build-info and creates the JFrog evidence at the end of the job.
+      - name: Setup JFrog CLI
+        if: ${{ steps.check-version.outputs.snapshot == 'true' }}
+        uses: jfrog/setup-jfrog-cli@4c2f06da03095113100534a16d58d8a252680949 # v5.3.5
+        env:
+          JF_URL: https://scm.ecodex.eu
+        with:
+          version: 2.133.0
+          oidc-provider-name: setup-jfrog
+
+      # Dependency graph for Dependabot alerts / GitHub Advanced Security
+      - name: Submit Dependency Snapshot to GitHub Advanced Security
+        uses: advanced-security/maven-dependency-submission-action@b275d12641ac2d2108b2cbb7598b154ad2f2cee8 # v5.0.0
+
+      # mvn-config: deploy to 'deploy-repo' (the JFrog CLI requires the release and snapshot repos to be set).
+      # Dependencies keep being resolved from the repositories declared in the POM.
       - name: Publish Snapshot
         if: ${{ steps.check-version.outputs.snapshot == 'true' }}
-        run: mvn -B -e deploy -DrepositoryId=${{ inputs.maven-repo-id }} ${{ inputs.maven-parameters }}
+        env:
+          DEPLOY_REPO: ${{ inputs.deploy-repo }}
+          MAVEN_PARAMETERS: ${{ inputs.maven-parameters }}
+        run: |
+          jf mvn-config --repo-deploy-releases="${DEPLOY_REPO}" --repo-deploy-snapshots="${DEPLOY_REPO}"
+          jf mvn -B -e deploy ${MAVEN_PARAMETERS}
+
+      # The attestation subject must be the zip's path in Artifactory; Maven renames it on deployment and
+      # snapshots get a timestamped file name, so it is looked up by sha256.
+      - name: Locate the distribution in Artifactory
+        if: ${{ steps.check-version.outputs.snapshot == 'true' }}
+        id: distribution
+        env:
+          DISTRIBUTION: ${{ inputs.distribution-path }}
+        run: |
+          sha=$(sha256sum $(ls ${DISTRIBUTION}) | cut -d' ' -f1)
+          subject=$(jf rt curl -s -XPOST /api/search/aql -H "Content-Type: text/plain" \
+            -d "items.find({\"sha256\":\"${sha}\"}).include(\"repo\",\"path\",\"name\")" \
+            | jq -r '.results[0] // error("distribution not found in Artifactory") | "\(.repo)/\(.path)/\(.name)"')
+          echo "subject-name=${subject}" >> "${GITHUB_OUTPUT}"
+          echo "subject-digest=sha256:${sha}" >> "${GITHUB_OUTPUT}"
+
+      # SLSA build provenance: which workflow, commit and runner produced the zip
+      - name: Attest the distribution provenance
+        if: ${{ steps.check-version.outputs.snapshot == 'true' }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.distribution.outputs.subject-name }}
+          subject-digest: ${{ steps.distribution.outputs.subject-digest }}
+
+      # Signed statement that the aggregated SBOM describes this zip
+      - name: Attest the distribution SBOM
+        if: ${{ steps.check-version.outputs.snapshot == 'true' }}
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ steps.distribution.outputs.subject-name }}
+          subject-digest: ${{ steps.distribution.outputs.subject-digest }}
+          sbom-path: ${{ inputs.sbom-path }}
